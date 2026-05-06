@@ -1,0 +1,28 @@
+// 测试接口，注意端口是 8081
+GET http://localhost:8081/xxx
+Accept: application/json
+
+
+//post注册模板
+#POST http://localhost:8081/user/register
+#Content-Type: application/json
+#Accept: application/json
+#请求投和请求体之间要空一行
+#{
+#  "username": "testuser",
+#  "password": "123456",
+#  "avatarUrl": null
+#}
+
+//post登录模板
+#POST http://localhost:8081/user/login
+#Content-Type: application/json
+#
+#{
+#  "username": "testuser",
+#  "password": "123456"
+#}
+
+//get查询用户模板
+#GET http://localhost:8081/user?username=testuser
+#Accept: application/json
