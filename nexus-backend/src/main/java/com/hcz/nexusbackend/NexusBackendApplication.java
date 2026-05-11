@@ -11,5 +11,4 @@ public class NexusBackendApplication {
     public static void main(String[] args) {
         SpringApplication.run(NexusBackendApplication.class, args);
     }
-
 }

@@ -29,4 +29,9 @@ public class CommentController {
     public List<Comment> list(@RequestParam Integer postId) {
         return commentService.list(postId);
     }
+
+    @PostMapping("/accept")
+    public String accept(@RequestParam Integer commentId) {
+        return commentService.accept(commentId);
+    }
 }

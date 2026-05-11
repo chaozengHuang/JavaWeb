@@ -10,21 +10,15 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
-@TableName("post")
-public class Post {
+@TableName("board")
+public class Board {
 
     @TableId(type = IdType.AUTO)
     private Long id;
 
-    private Long boardId;
-    private Long authorId;
-    private String title;
-    private String content;
-    private String type;
-    private Integer rewardPoints;
-    private Integer isPinned;
-    private Integer isGlobalPinned;
-    private Integer isFeatured;
+    private String name;
+    private String description;
+    private Long creatorId;
     private String status;
 
     @TableField(fill = FieldFill.INSERT)

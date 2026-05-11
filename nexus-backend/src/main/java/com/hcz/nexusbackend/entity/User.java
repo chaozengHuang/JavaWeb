@@ -1,52 +1,34 @@
 package com.hcz.nexusbackend.entity;
 
-import java.util.Date;
+import com.baomidou.mybatisplus.annotation.FieldFill;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+import lombok.Data;
 
+import java.time.LocalDateTime;
+
+@Data
+@TableName("user")
 public class User {
 
-    private Integer id;
+    @TableId(type = IdType.AUTO)
+    private Long id;
+
     private String username;
     private String password;
-    private String avatarUrl;
-    private Date createTime;
+    private String email;
+    private String phone;
+    private String jobNature;
+    private String location;
+    private Integer points;
+    private String globalRole;
+    private String status;
 
-    public Integer getId() {
-        return id;
-    }
+    @TableField(fill = FieldFill.INSERT)
+    private LocalDateTime createdAt;
 
-    public void setId(Integer id) {
-        this.id = id;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    public String getAvatarUrl() {
-        return avatarUrl;
-    }
-
-    public void setAvatarUrl(String avatarUrl) {
-        this.avatarUrl = avatarUrl;
-    }
-
-    public Date getCreateTime() {
-        return createTime;
-    }
-
-    public void setCreateTime(Date createTime) {
-        this.createTime = createTime;
-    }
+    @TableField(fill = FieldFill.INSERT_UPDATE)
+    private LocalDateTime updatedAt;
 }

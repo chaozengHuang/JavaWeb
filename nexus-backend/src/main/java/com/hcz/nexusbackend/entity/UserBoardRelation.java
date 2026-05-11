@@ -10,26 +10,16 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
-@TableName("post")
-public class Post {
+@TableName("user_board_relation")
+public class UserBoardRelation {
 
     @TableId(type = IdType.AUTO)
     private Long id;
 
+    private Long userId;
     private Long boardId;
-    private Long authorId;
-    private String title;
-    private String content;
-    private String type;
-    private Integer rewardPoints;
-    private Integer isPinned;
-    private Integer isGlobalPinned;
-    private Integer isFeatured;
-    private String status;
+    private String boardRole;
 
     @TableField(fill = FieldFill.INSERT)
-    private LocalDateTime createdAt;
-
-    @TableField(fill = FieldFill.INSERT_UPDATE)
-    private LocalDateTime updatedAt;
+    private LocalDateTime joinTime;
 }

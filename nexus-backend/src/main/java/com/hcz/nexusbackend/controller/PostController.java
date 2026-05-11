@@ -19,19 +19,43 @@ public class PostController {
     private PostService postService;
 
     @PostMapping("/create")
-    public Post create(@RequestParam Integer userId,
-                       @RequestParam String title,
-                       @RequestParam String content) {
-        return postService.create(userId, title, content);
+    public String create(@RequestParam Integer userId,
+                         @RequestParam String title,
+                         @RequestParam String content,
+                         @RequestParam(required = false) Integer boardId,
+                         @RequestParam(required = false) Integer rewardPoints) {
+        return postService.create(userId, title, content, boardId, rewardPoints);
     }
 
     @GetMapping("/list")
-    public List<Post> list() {
-        return postService.list();
+    public List<Post> list(@RequestParam(required = false) Integer boardId) {
+        return postService.list(boardId);
     }
 
     @GetMapping("/detail")
     public Post detail(@RequestParam Integer postId) {
         return postService.detail(postId);
+    }
+
+    @PostMapping("/update")
+    public String update(@RequestParam Integer postId,
+                         @RequestParam Integer userId,
+                         @RequestParam String title,
+                         @RequestParam String content) {
+        return postService.update(postId, userId, title, content);
+    }
+
+    @PostMapping("/setTop")
+    public String setTop(@RequestParam Integer postId,
+                         @RequestParam Integer userId,
+                         @RequestParam Integer status) {
+        return postService.setTop(postId, userId, status);
+    }
+
+    @PostMapping("/setElite")
+    public String setElite(@RequestParam Integer postId,
+                           @RequestParam Integer userId,
+                           @RequestParam Integer status) {
+        return postService.setElite(postId, userId, status);
     }
 }
