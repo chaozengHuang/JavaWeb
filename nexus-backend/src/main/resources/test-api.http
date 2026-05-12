@@ -13,10 +13,7 @@ GET http://localhost:8081/post/list
 POST http://localhost:8081/comment/create
 Content-Type: application/x-www-form-urlencoded
 
-
 postId=1&userId=1&content=我是第一名！前排出售瓜子花生。
-
-//测试
 
 ### 4. 测试：获取帖子ID为1的所有评论
 GET http://localhost:8081/comment/list?postId=1
