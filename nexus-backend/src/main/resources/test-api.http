@@ -1,143 +1,43 @@
-# ======================================
-# Nexus BBS 后端接口测试
-# 端口: 8081 | 所有参数: form-urlencoded
-# ======================================
-//测试直接执行即可，后端一定要先自测！
-# ==========================================
-# 一、用户模块 /user
-# ==========================================
+// 测试接口，注意端口是 8081
 
-### 1.1 注册新用户
-POST http://localhost:8081/user/register
-Content-Type: application/x-www-form-urlencoded
-
-username=testuser&password=123456
-
-### 1.2 登录（返回 token + user，后续请求需携带 token）
-POST http://localhost:8081/user/login
-Content-Type: application/x-www-form-urlencoded
-
-username=testuser&password=123456
-
-### 1.3 查询用户详情
-GET http://localhost:8081/user/detail?id=1
-
-### 1.4 更新用户资料
-POST http://localhost:8081/user/updateProfile
-Content-Type: application/x-www-form-urlencoded
-
-id=1&phone=13800138000&jobNature=前端开发&workLocation=北京
-
-# ==========================================
-# 二、板块模块 /board
-# ==========================================
-
-### 2.1 获取所有板块列表
-GET http://localhost:8081/board/list
-
-### 2.2 创建新板块
-POST http://localhost:8081/board/create
-Content-Type: application/x-www-form-urlencoded
-
-name=技术交流&description=编程技术讨论区&creatorId=1
-
-### 2.3 再创建一个板块（用于测试多板块切换）
-POST http://localhost:8081/board/create
-Content-Type: application/x-www-form-urlencoded
-
-name=闲聊灌水&description=随便聊聊&creatorId=1
-
-# ==========================================
-# 三、帖子模块 /post
-# ==========================================
-
-### 3.1 发布普通帖子（不指定 boardId 默认归入板块1）
+### 1. 测试：发布一条帖子
 POST http://localhost:8081/post/create
 Content-Type: application/x-www-form-urlencoded
 
-userId=1&title=欢迎来到Nexus论坛&content=这是第一篇测试帖子，祝大家玩得开心！&boardId=1&rewardPoints=0
+userId=1&title=Nexus论坛上线啦&content=欢迎大家来到我们的期末大作业论坛，随便聊天！
 
-### 3.2 发布悬赏帖子（悬赏20积分）
-POST http://localhost:8081/post/create
-Content-Type: application/x-www-form-urlencoded
-
-userId=1&title=求助：Spring Boot 连接池配置&content=MyBatis-Plus 的 HikariCP 连接池超时怎么调？在线等！&boardId=1&rewardPoints=20
-
-### 3.3 获取所有帖子列表
+### 2. 测试：获取所有帖子列表
 GET http://localhost:8081/post/list
 
-### 3.4 按板块筛选帖子列表
-GET http://localhost:8081/post/list?boardId=1
-
-### 3.5 查看帖子详情
-GET http://localhost:8081/post/detail?postId=1
-
-### 3.6 修改帖子（只有作者或管理员可操作）
-POST http://localhost:8081/post/update
-Content-Type: application/x-www-form-urlencoded
-
-postId=1&userId=1&title=欢迎来到Nexus论坛（已编辑）&content=这是第一篇测试帖子，内容已更新，祝大家玩得开心！
-
-### 3.7 置顶帖子（仅管理员）
-POST http://localhost:8081/post/setTop
-Content-Type: application/x-www-form-urlencoded
-
-postId=1&userId=1&status=1
-
-### 3.8 加精帖子（仅管理员）
-POST http://localhost:8081/post/setElite
-Content-Type: application/x-www-form-urlencoded
-
-postId=2&userId=1&status=1
-
-### 3.9 取消置顶（status=0）
-POST http://localhost:8081/post/setTop
-Content-Type: application/x-www-form-urlencoded
-
-postId=1&userId=1&status=0
-
-# ==========================================
-# 四、评论模块 /comment
-# ==========================================
-
-### 4.1 给帖子1发表评论
+### 3. 测试：给刚刚的帖子发一条评论
 POST http://localhost:8081/comment/create
 Content-Type: application/x-www-form-urlencoded
 
-postId=1&userId=1&content=沙发！支持一下~
+postId=1&userId=1&content=我是第一名！前排出售瓜子花生。
 
-### 4.2 给帖子1再发一条评论（用于测试采纳）
-POST http://localhost:8081/comment/create
-Content-Type: application/x-www-form-urlencoded
-
-postId=1&userId=1&content=建议检查 spring.datasource.hikari.connection-timeout 配置项
-
-### 4.3 给悬赏帖子发表评论
-POST http://localhost:8081/comment/create
-Content-Type: application/x-www-form-urlencoded
-
-postId=2&userId=1&content=最大连接数设置 pool-size=20 一般够用
-
-### 4.4 获取帖子1的所有评论
+### 4. 测试：获取帖子ID为1的所有评论
 GET http://localhost:8081/comment/list?postId=1
 
-### 4.5 获取帖子2的所有评论
-GET http://localhost:8081/comment/list?postId=2
+//post注册模板
+#POST http://localhost:8081/user/register
+#Content-Type: application/json
+#Accept: application/json
+#请求投和请求体之间要空一行
+#{
+#  "username": "testuser",
+#  "password": "123456",
+#  "avatarUrl": null
+#}
 
-### 4.6 采纳评论（采纳帖子2的第3条评论，悬赏积分会转给评论作者）
-POST http://localhost:8081/comment/accept
-Content-Type: application/x-www-form-urlencoded
+//post登录模板
+#POST http://localhost:8081/user/login
+#Content-Type: application/json
+#
+#{
+#  "username": "testuser",
+#  "password": "123456"
+#}
 
-commentId=3
-
-# ==========================================
-# 五、完整流程验证
-# ==========================================
-
-### 验证：再次查看帖子2详情，确认悬赏已清零、评论3已采纳
-GET http://localhost:8081/post/detail?postId=2
-# 预期：rewardPoints = 0
-
-### 验证：查看用户1详情，确认积分变化
-GET http://localhost:8081/user/detail?id=1
-# 发悬赏帖扣20 + 自己采纳评论加20 = 积分不变
+//get查询用户模板
+#GET http://localhost:8081/user?username=testuser
+#Accept: application/json
