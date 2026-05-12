@@ -19,19 +19,19 @@ public class CommentController {
     private CommentService commentService;
 
     @PostMapping("/create")
-    public Comment create(@RequestParam Integer postId,
-                          @RequestParam Integer userId,
+    public Comment create(@RequestParam Long postId,
+                          @RequestParam Long userId,
                           @RequestParam String content) {
         return commentService.create(postId, userId, content);
     }
 
     @GetMapping("/list")
-    public List<Comment> list(@RequestParam Integer postId) {
+    public List<Comment> list(@RequestParam Long postId) {
         return commentService.list(postId);
     }
 
     @PostMapping("/accept")
-    public String accept(@RequestParam Integer commentId) {
+    public String accept(@RequestParam Long commentId) {
         return commentService.accept(commentId);
     }
 }
