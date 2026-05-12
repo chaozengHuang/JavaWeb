@@ -2,7 +2,6 @@ package com.hcz.nexusbackend.util;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 
 import java.nio.charset.StandardCharsets;
@@ -20,21 +19,21 @@ public class JwtUtils {
         Date expire = new Date(now.getTime() + EXPIRE_SECONDS * 1000);
 
         return Jwts.builder()
-                .setHeaderParam("typ", "JWT")
+                .header().type("JWT").and()
                 .claim("userId", userId)
                 .claim("globalRole", globalRole)
-                .setIssuedAt(now)
-                .setExpiration(expire)
-                .signWith(Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8)), SignatureAlgorithm.HS256)
+                .issuedAt(now)
+                .expiration(expire)
+                .signWith(Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8)))
                 .compact();
     }
 
     public static Map<String, Object> parse(String token) {
-        Claims claims = Jwts.parserBuilder()
-                .setSigningKey(Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8)))
+        Claims claims = Jwts.parser()
+                .verifyWith(Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8)))
                 .build()
-                .parseClaimsJws(token)
-                .getBody();
+                .parseSignedClaims(token)
+                .getPayload();
 
         Map<String, Object> map = new LinkedHashMap<>();
         map.put("userId", claims.get("userId", Long.class));
