@@ -27,18 +27,18 @@ public class AdminController {
 
     @GetMapping("/post")
     public Result<IPage<Post>> listPosts(
-            @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) String status,
-            @RequestParam(required = false) String type,
-            @RequestParam(required = false) Long boardId,
-            @RequestParam(required = false) Integer page,
-            @RequestParam(required = false) Integer size) {
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "status", required = false) String status,
+            @RequestParam(value = "type", required = false) String type,
+            @RequestParam(value = "boardId", required = false) Long boardId,
+            @RequestParam(value = "page", required = false) Integer page,
+            @RequestParam(value = "size", required = false) Integer size) {
         IPage<Post> result = postService.adminList(keyword, status, type, boardId, page, size);
         return Result.success(result);
     }
 
     @PutMapping("/post/{id}/status")
-    public Result<Void> updatePostStatus(@PathVariable Long id, @RequestParam String status) {
+    public Result<Void> updatePostStatus(@PathVariable Long id, @RequestParam("status") String status) {
         postService.adminUpdateStatus(id, status);
         return Result.success("操作成功", null);
     }
@@ -51,11 +51,11 @@ public class AdminController {
 
     @GetMapping("/comment")
     public Result<IPage<Comment>> listComments(
-            @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) String status,
-            @RequestParam(required = false) Long postId,
-            @RequestParam(required = false) Integer page,
-            @RequestParam(required = false) Integer size) {
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "status", required = false) String status,
+            @RequestParam(value = "postId", required = false) Long postId,
+            @RequestParam(value = "page", required = false) Integer page,
+            @RequestParam(value = "size", required = false) Integer size) {
         IPage<Comment> result = commentService.adminList(keyword, status, postId, page, size);
         return Result.success(result);
     }

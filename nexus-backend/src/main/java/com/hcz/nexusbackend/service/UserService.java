@@ -17,7 +17,7 @@ public class UserService {
     @Autowired
     private UserMapper userMapper;
 
-    public String register(String username, String password) {
+    public void register(String username, String password) {
         User existing = userMapper.selectOne(
                 new LambdaQueryWrapper<User>().eq(User::getUsername, username));
         if (existing != null) {
@@ -26,18 +26,14 @@ public class UserService {
         User user = new User();
         user.setUsername(username);
         user.setPassword(password);
-        user.setPoints(0);
-        user.setGlobalRole("USER");
-        user.setStatus("NORMAL");
         userMapper.insert(user);
-        return "注册成功";
     }
 
     public Map<String, Object> login(String username, String password) {
         User user = userMapper.selectOne(
                 new LambdaQueryWrapper<User>().eq(User::getUsername, username));
         if (user == null || !user.getPassword().equals(password)) {
-            throw new BusinessException("账号或密码错误");
+            throw new BusinessException(401, "账号或密码错误");
         }
         String token = JwtUtils.generate(user.getId(), user.getGlobalRole());
         Map<String, Object> result = new LinkedHashMap<>();
@@ -46,21 +42,11 @@ public class UserService {
         return result;
     }
 
-    public User getById(Integer id) {
-        return userMapper.selectById(id);
-    }
-
-    public String updateProfile(Integer id, String phone, String jobNature, String workLocation) {
+    public User getById(Long id) {
         User user = userMapper.selectById(id);
         if (user == null) {
             throw new BusinessException("用户不存在");
         }
-        User update = new User();
-        update.setId(Long.valueOf(id));
-        update.setPhone(phone);
-        update.setJobNature(jobNature);
-        update.setLocation(workLocation);
-        userMapper.updateById(update);
-        return "更新成功";
+        return user;
     }
 }

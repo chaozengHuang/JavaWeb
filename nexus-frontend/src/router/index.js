@@ -5,8 +5,22 @@ const router = createRouter({
   routes: [
     {
       path: '/',
+      redirect: '/forum',
+    },
+    {
+      path: '/auth',
       name: 'auth',
       component: () => import('@/views/AuthView.vue'),
+    },
+    {
+      path: '/forum',
+      name: 'forum',
+      component: () => import('@/views/ForumView.vue'),
+    },
+    {
+      path: '/profile',
+      name: 'profile',
+      component: () => import('@/views/ProfileView.vue'),
     },
   ],
 })

@@ -24,9 +24,9 @@ public class BoardController {
     }
 
     @PostMapping("/create")
-    public Board create(@RequestParam String name,
-                        @RequestParam(required = false) String description,
-                        @RequestParam Long creatorId) {
+    public Board create(@RequestParam("name") String name,
+                        @RequestParam(value = "description", required = false) String description,
+                        @RequestParam("creatorId") Long creatorId) {
         return boardService.create(name, description, creatorId);
     }
 }
