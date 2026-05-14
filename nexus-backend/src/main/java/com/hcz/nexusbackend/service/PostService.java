@@ -1,14 +1,18 @@
 package com.hcz.nexusbackend.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.hcz.nexusbackend.dto.PostCreateDTO;
+import com.hcz.nexusbackend.dto.PostUpdateDTO;
 import com.hcz.nexusbackend.entity.Post;
 import com.hcz.nexusbackend.entity.User;
+import com.hcz.nexusbackend.exception.BusinessException;
 import com.hcz.nexusbackend.mapper.PostMapper;
 import com.hcz.nexusbackend.mapper.UserMapper;
+import com.hcz.nexusbackend.util.SecurityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 @Service
 public class PostService {
@@ -19,83 +23,210 @@ public class PostService {
     @Autowired
     private UserMapper userMapper;
 
-    public String create(Long userId, String title, String content, Long boardId, Integer rewardPoints) {
-        if (rewardPoints != null && rewardPoints > 0) {
+    public Post create(PostCreateDTO dto) {
+        Long userId = SecurityUtils.getUserId();
+        if (userId == null) {
+            throw new BusinessException(401, "请先登录");
+        }
+
+        if (dto.getRewardPoints() != null && dto.getRewardPoints() > 0) {
             User user = userMapper.selectById(userId);
-            if (user == null || user.getPoints() < rewardPoints) {
-                return "积分不足";
+            if (user == null || user.getPoints() < dto.getRewardPoints()) {
+                throw new BusinessException("积分不足");
             }
-            user.setPoints(user.getPoints() - rewardPoints);
+            user.setPoints(user.getPoints() - dto.getRewardPoints());
             userMapper.updateById(user);
         }
+
         Post post = new Post();
         post.setAuthorId(userId);
-        post.setTitle(title);
-        post.setContent(content);
-        post.setBoardId(boardId != null ? boardId : 1L);
-        post.setRewardPoints(rewardPoints != null ? rewardPoints : 0);
+        post.setTitle(dto.getTitle());
+        post.setContent(dto.getContent());
+        post.setBoardId(dto.getBoardId() != null ? dto.getBoardId() : 1L);
+        post.setType(dto.getType());
+        post.setRewardPoints(dto.getRewardPoints() != null ? dto.getRewardPoints() : 0);
+        post.setIsPinned(0);
+        post.setIsGlobalPinned(0);
+        post.setIsFeatured(0);
+        post.setStatus("NORMAL");
         postMapper.insert(post);
-        return "发帖成功";
+        return post;
     }
 
-    public List<Post> list(Long boardId) {
+    public IPage<Post> list(Long boardId, String keyword, String status, String type, Integer page, Integer size) {
+        Page<Post> pageParam = new Page<>(page != null ? page : 1, size != null ? size : 10);
+        LambdaQueryWrapper<Post> wrapper = new LambdaQueryWrapper<>();
+
         if (boardId != null) {
-            return postMapper.selectList(
-                    new LambdaQueryWrapper<Post>().eq(Post::getBoardId, boardId)
-                            .orderByDesc(Post::getIsPinned)
-                            .orderByDesc(Post::getId));
+            wrapper.eq(Post::getBoardId, boardId);
         }
-        return postMapper.selectList(
-                new LambdaQueryWrapper<Post>()
-                        .orderByDesc(Post::getIsPinned)
-                        .orderByDesc(Post::getId));
+        if (keyword != null && !keyword.isEmpty()) {
+            wrapper.and(w -> w.like(Post::getTitle, keyword).or().like(Post::getContent, keyword));
+        }
+        if (status != null && !status.isEmpty()) {
+            wrapper.eq(Post::getStatus, status);
+        } else {
+            wrapper.ne(Post::getStatus, "DELETED");
+        }
+        if (type != null && !type.isEmpty()) {
+            wrapper.eq(Post::getType, type);
+        }
+
+        wrapper.orderByDesc(Post::getIsGlobalPinned)
+               .orderByDesc(Post::getIsPinned)
+               .orderByDesc(Post::getId);
+
+        return postMapper.selectPage(pageParam, wrapper);
     }
 
-    public Post detail(Long postId) {
-        return postMapper.selectById(postId);
+    public Post detail(Long id) {
+        Post post = postMapper.selectById(id);
+        if (post == null || "DELETED".equals(post.getStatus())) {
+            throw new BusinessException("帖子不存在");
+        }
+        return post;
     }
 
-    public String update(Long postId, Long userId, String title, String content) {
-        Post post = postMapper.selectById(postId);
+    public void update(Long id, PostUpdateDTO dto) {
+        Long userId = SecurityUtils.getUserId();
+        if (userId == null) {
+            throw new BusinessException(401, "请先登录");
+        }
+
+        Post post = postMapper.selectById(id);
         if (post == null) {
-            return "帖子不存在";
+            throw new BusinessException("帖子不存在");
         }
+
         User user = userMapper.selectById(userId);
         if (user == null) {
-            return "用户不存在";
+            throw new BusinessException("用户不存在");
         }
+
         if (!post.getAuthorId().equals(userId) && !"SYS_ADMIN".equals(user.getGlobalRole())) {
-            return "无权修改";
+            throw new BusinessException(403, "无权修改");
         }
+
         Post update = new Post();
-        update.setId(postId);
-        update.setTitle(title);
-        update.setContent(content);
+        update.setId(id);
+        update.setTitle(dto.getTitle());
+        update.setContent(dto.getContent());
         postMapper.updateById(update);
-        return "修改成功";
     }
 
-    public String setTop(Long postId, Long userId, Integer status) {
-        User user = userMapper.selectById(userId);
-        if (user == null || !"SYS_ADMIN".equals(user.getGlobalRole())) {
-            return "无管理员权限";
+    public void delete(Long id) {
+        Long userId = SecurityUtils.getUserId();
+        if (userId == null) {
+            throw new BusinessException(401, "请先登录");
         }
+
+        Post post = postMapper.selectById(id);
+        if (post == null) {
+            throw new BusinessException("帖子不存在");
+        }
+
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new BusinessException("用户不存在");
+        }
+
+        if (!post.getAuthorId().equals(userId) && !"SYS_ADMIN".equals(user.getGlobalRole())) {
+            throw new BusinessException(403, "无权删除");
+        }
+
         Post update = new Post();
-        update.setId(postId);
-        update.setIsPinned(status != null ? status : 1);
+        update.setId(id);
+        update.setStatus("DELETED");
         postMapper.updateById(update);
-        return "操作成功";
     }
 
-    public String setElite(Long postId, Long userId, Integer status) {
-        User user = userMapper.selectById(userId);
-        if (user == null || !"SYS_ADMIN".equals(user.getGlobalRole())) {
-            return "无管理员权限";
+    public void setPin(Long id, Integer pinnedStatus) {
+        checkAdminPermission();
+        Post post = postMapper.selectById(id);
+        if (post == null) {
+            throw new BusinessException("帖子不存在");
         }
         Post update = new Post();
-        update.setId(postId);
-        update.setIsFeatured(status != null ? status : 1);
+        update.setId(id);
+        update.setIsPinned(pinnedStatus != null ? pinnedStatus : 1);
         postMapper.updateById(update);
-        return "操作成功";
+    }
+
+    public void setGlobalPin(Long id, Integer pinnedStatus) {
+        checkAdminPermission();
+        Post post = postMapper.selectById(id);
+        if (post == null) {
+            throw new BusinessException("帖子不存在");
+        }
+        Post update = new Post();
+        update.setId(id);
+        update.setIsGlobalPinned(pinnedStatus != null ? pinnedStatus : 1);
+        postMapper.updateById(update);
+    }
+
+    public void setFeature(Long id, Integer featuredStatus) {
+        checkAdminPermission();
+        Post post = postMapper.selectById(id);
+        if (post == null) {
+            throw new BusinessException("帖子不存在");
+        }
+        Post update = new Post();
+        update.setId(id);
+        update.setIsFeatured(featuredStatus != null ? featuredStatus : 1);
+        postMapper.updateById(update);
+    }
+
+    public IPage<Post> adminList(String keyword, String status, String type, Long boardId, Integer page, Integer size) {
+        checkAdminPermission();
+        Page<Post> pageParam = new Page<>(page != null ? page : 1, size != null ? size : 10);
+        LambdaQueryWrapper<Post> wrapper = new LambdaQueryWrapper<>();
+
+        if (keyword != null && !keyword.isEmpty()) {
+            wrapper.and(w -> w.like(Post::getTitle, keyword).or().like(Post::getContent, keyword));
+        }
+        if (status != null && !status.isEmpty()) {
+            wrapper.eq(Post::getStatus, status);
+        }
+        if (type != null && !type.isEmpty()) {
+            wrapper.eq(Post::getType, type);
+        }
+        if (boardId != null) {
+            wrapper.eq(Post::getBoardId, boardId);
+        }
+
+        wrapper.orderByDesc(Post::getId);
+        return postMapper.selectPage(pageParam, wrapper);
+    }
+
+    public void adminUpdateStatus(Long id, String status) {
+        checkAdminPermission();
+        Post post = postMapper.selectById(id);
+        if (post == null) {
+            throw new BusinessException("帖子不存在");
+        }
+        Post update = new Post();
+        update.setId(id);
+        update.setStatus(status);
+        postMapper.updateById(update);
+    }
+
+    public void adminDelete(Long id) {
+        checkAdminPermission();
+        Post post = postMapper.selectById(id);
+        if (post == null) {
+            throw new BusinessException("帖子不存在");
+        }
+        postMapper.deleteById(id);
+    }
+
+    private void checkAdminPermission() {
+        Long userId = SecurityUtils.getUserId();
+        if (userId == null) {
+            throw new BusinessException(401, "请先登录");
+        }
+        User user = userMapper.selectById(userId);
+        if (user == null || !"SYS_ADMIN".equals(user.getGlobalRole())) {
+            throw new BusinessException(403, "无管理员权限");
+        }
     }
 }
