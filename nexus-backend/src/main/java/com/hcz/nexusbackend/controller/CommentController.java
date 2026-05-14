@@ -32,7 +32,7 @@ public class CommentController {
     }
 
     @GetMapping
-    public Result<List<Comment>> list(@RequestParam Long postId) {
+    public Result<List<Comment>> list(@RequestParam("postId") Long postId) {
         List<Comment> comments = commentService.list(postId);
         return Result.success(comments);
     }

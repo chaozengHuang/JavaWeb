@@ -1,6 +1,5 @@
 package com.hcz.nexusbackend.controller;
 
-import com.hcz.nexusbackend.common.Result;
 import com.hcz.nexusbackend.entity.User;
 import com.hcz.nexusbackend.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,29 +19,18 @@ public class UserController {
     private UserService userService;
 
     @PostMapping("/register")
-    public Result<String> register(@RequestParam String username, @RequestParam String password) {
-        String result = userService.register(username, password);
-        return Result.success(result);
+    public String register(@RequestParam("username") String username, @RequestParam("password") String password) {
+        userService.register(username, password);
+        return "注册成功";
     }
 
     @PostMapping("/login")
-    public Result<Map<String, Object>> login(@RequestParam String username, @RequestParam String password) {
-        Map<String, Object> result = userService.login(username, password);
-        return Result.success("登录成功", result);
-    }
-
-    @PostMapping("/updateProfile")
-    public Result<String> updateProfile(@RequestParam Integer id,
-                                         @RequestParam String phone,
-                                         @RequestParam String jobNature,
-                                         @RequestParam String workLocation) {
-        String result = userService.updateProfile(id, phone, jobNature, workLocation);
-        return Result.success(result);
+    public Map<String, Object> login(@RequestParam("username") String username, @RequestParam("password") String password) {
+        return userService.login(username, password);
     }
 
     @GetMapping("/detail")
-    public Result<User> detail(@RequestParam Integer id) {
-        User user = userService.getById(id);
-        return Result.success(user);
+    public User detail(@RequestParam("id") Long id) {
+        return userService.getById(id);
     }
 }

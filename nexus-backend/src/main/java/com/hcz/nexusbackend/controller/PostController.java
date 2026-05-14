@@ -33,12 +33,12 @@ public class PostController {
 
     @GetMapping
     public Result<IPage<Post>> list(
-            @RequestParam(required = false) Long boardId,
-            @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) String status,
-            @RequestParam(required = false) String type,
-            @RequestParam(required = false) Integer page,
-            @RequestParam(required = false) Integer size) {
+            @RequestParam(value = "boardId", required = false) Long boardId,
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "status", required = false) String status,
+            @RequestParam(value = "type", required = false) String type,
+            @RequestParam(value = "page", required = false) Integer page,
+            @RequestParam(value = "size", required = false) Integer size) {
         IPage<Post> result = postService.list(boardId, keyword, status, type, page, size);
         return Result.success(result);
     }
@@ -62,19 +62,19 @@ public class PostController {
     }
 
     @PutMapping("/{id}/pin")
-    public Result<Void> setPin(@PathVariable Long id, @RequestParam Integer status) {
+    public Result<Void> setPin(@PathVariable Long id, @RequestParam("status") Integer status) {
         postService.setPin(id, status);
         return Result.success("操作成功", null);
     }
 
     @PutMapping("/{id}/global-pin")
-    public Result<Void> setGlobalPin(@PathVariable Long id, @RequestParam Integer status) {
+    public Result<Void> setGlobalPin(@PathVariable Long id, @RequestParam("status") Integer status) {
         postService.setGlobalPin(id, status);
         return Result.success("操作成功", null);
     }
 
     @PutMapping("/{id}/feature")
-    public Result<Void> setFeature(@PathVariable Long id, @RequestParam Integer status) {
+    public Result<Void> setFeature(@PathVariable Long id, @RequestParam("status") Integer status) {
         postService.setFeature(id, status);
         return Result.success("操作成功", null);
     }
