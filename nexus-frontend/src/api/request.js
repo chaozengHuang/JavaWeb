@@ -26,7 +26,14 @@ request.interceptors.request.use(
 
 // 响应拦截器：统一处理错误
 request.interceptors.response.use(
-  (response) => response.data,
+  (response) => {
+    const data = response.data
+    // 检查业务状态码，非 200 都是错误
+    if (data && typeof data.code === 'number' && data.code !== 200) {
+      return Promise.reject(new Error(data.message || '请求失败'))
+    }
+    return data
+  },
   (error) => {
     if (error.response) {
       const { status, data } = error.response

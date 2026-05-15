@@ -25,8 +25,8 @@ const onLogin = async () => {
     return
   }
   try {
-    const data = await login(loginForm.value.username, loginForm.value.password)
-    localStorage.setItem('user', JSON.stringify(data))
+    const res = await login(loginForm.value.username, loginForm.value.password)
+    localStorage.setItem('user', JSON.stringify(res))
     ElMessage({ type: 'success', message: '登录成功' })
     router.push('/forum')
   } catch (error) {
