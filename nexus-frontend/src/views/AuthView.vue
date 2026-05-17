@@ -1,11 +1,10 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import axios from 'axios'
+import { login, register } from '@/api/user'
 import { ElMessage } from 'element-plus'
 
 const router = useRouter()
-const API_BASE = 'http://localhost:8081'
 
 const activeTab = ref('login')
 
@@ -17,40 +16,45 @@ const loginForm = ref({
 const registerForm = ref({
   username: '',
   password: '',
+  confirmPassword: '',
 })
 
 const onLogin = async () => {
+  if (!loginForm.value.username || !loginForm.value.password) {
+    ElMessage({ type: 'warning', message: '请填写用户名和密码' })
+    return
+  }
   try {
-    const params = new URLSearchParams()
-    params.append('username', loginForm.value.username)
-    params.append('password', loginForm.value.password)
-    const res = await axios.post(`${API_BASE}/user/login`, params)
-    if (res.data && res.data.id) {
-      localStorage.setItem('user', JSON.stringify(res.data))
-      ElMessage({ type: 'success', message: '登录成功' })
-      router.push('/forum')
-    } else {
-      ElMessage({ type: 'error', message: '账号或密码错误' })
-    }
-  } catch {
-    ElMessage({ type: 'error', message: '请求失败，请检查网络或后端服务' })
+    const res = await login(loginForm.value.username, loginForm.value.password)
+    localStorage.setItem('user', JSON.stringify(res))
+    ElMessage({ type: 'success', message: '登录成功' })
+    router.push('/forum')
+  } catch (error) {
+    ElMessage({ type: 'error', message: error.message || '登录失败' })
   }
 }
 
 const onRegister = async () => {
+  const { username, password, confirmPassword } = registerForm.value
+  if (!username || !password || !confirmPassword) {
+    ElMessage({ type: 'warning', message: '请填写所有字段' })
+    return
+  }
+  if (password !== confirmPassword) {
+    ElMessage({ type: 'error', message: '两次输入的密码不一致' })
+    return
+  }
+  if (password.length < 6 || password.length > 20) {
+    ElMessage({ type: 'warning', message: '密码需 6-20 个字符' })
+    return
+  }
   try {
-    const params = new URLSearchParams()
-    params.append('username', registerForm.value.username)
-    params.append('password', registerForm.value.password)
-    const res = await axios.post(`${API_BASE}/user/register`, params)
-    if (res.data && String(res.data).includes('成功')) {
-      ElMessage({ type: 'success', message: '注册成功' })
-      activeTab.value = 'login'
-    } else {
-      ElMessage({ type: 'error', message: '注册失败' })
-    }
-  } catch {
-    ElMessage({ type: 'error', message: '请求失败，请检查网络或后端服务' })
+    await register(username, password)
+    ElMessage({ type: 'success', message: '注册成功，请登录' })
+    registerForm.value = { username: '', password: '', confirmPassword: '' }
+    activeTab.value = 'login'
+  } catch (error) {
+    ElMessage({ type: 'error', message: error.message || '注册失败' })
   }
 }
 </script>
@@ -80,6 +84,9 @@ const onRegister = async () => {
             </el-form-item>
             <el-form-item>
               <el-input v-model="registerForm.password" type="password" placeholder="密码" prefix-icon="Lock" size="large" show-password />
+            </el-form-item>
+            <el-form-item>
+              <el-input v-model="registerForm.confirmPassword" type="password" placeholder="确认密码" prefix-icon="Lock" size="large" show-password @keyup.enter="onRegister" />
             </el-form-item>
             <el-form-item>
               <el-button type="success" size="large" class="auth-btn" @click="onRegister">注 册</el-button>

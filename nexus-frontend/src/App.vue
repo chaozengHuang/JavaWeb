@@ -16,7 +16,13 @@ const activeMenu = computed(() => {
 const loadUser = () => {
   const stored = localStorage.getItem('user')
   if (stored) {
-    user.value = JSON.parse(stored)
+    try {
+      const data = JSON.parse(stored)
+      // data 结构: { token: "...", user: { id, username, ... } }
+      user.value = data.user || null
+    } catch {
+      user.value = null
+    }
   }
 }
 
