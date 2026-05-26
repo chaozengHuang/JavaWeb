@@ -25,6 +25,8 @@ public class User {
     private Integer points;
     private String globalRole;
     private String status;
+    private String avatar;
+    private String bio;
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
