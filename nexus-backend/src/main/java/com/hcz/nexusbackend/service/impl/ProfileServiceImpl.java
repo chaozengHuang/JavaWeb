@@ -1,0 +1,266 @@
+package com.hcz.nexusbackend.service.impl;
+
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.hcz.nexusbackend.entity.BrowseHistory;
+import com.hcz.nexusbackend.entity.Post;
+import com.hcz.nexusbackend.entity.PostFavorite;
+import com.hcz.nexusbackend.entity.PostLike;
+import com.hcz.nexusbackend.entity.User;
+import com.hcz.nexusbackend.exception.BusinessException;
+import com.hcz.nexusbackend.mapper.BrowseHistoryMapper;
+import com.hcz.nexusbackend.mapper.PostFavoriteMapper;
+import com.hcz.nexusbackend.mapper.PostLikeMapper;
+import com.hcz.nexusbackend.mapper.PostMapper;
+import com.hcz.nexusbackend.mapper.UserMapper;
+import com.hcz.nexusbackend.service.ProfileService;
+import com.hcz.nexusbackend.util.SecurityUtils;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.*;
+import java.util.stream.Collectors;
+
+@Slf4j
+@Service
+public class ProfileServiceImpl implements ProfileService {
+
+    @Autowired
+    private UserMapper userMapper;
+
+    @Autowired
+    private PostMapper postMapper;
+
+    @Autowired
+    private PostFavoriteMapper favoriteMapper;
+
+    @Autowired
+    private PostLikeMapper likeMapper;
+
+    @Autowired
+    private BrowseHistoryMapper historyMapper;
+
+    @Value("${file.upload.dir:uploads}")
+    private String uploadDir;
+
+    private Long getCurrentUserId() {
+        Long userId = SecurityUtils.getUserId();
+        if (userId == null) {
+            throw new BusinessException(401, "请先登录");
+        }
+        return userId;
+    }
+
+    // ==================== 个人信息 ====================
+
+    @Override
+    public Map<String, Object> getProfile() {
+        Long userId = getCurrentUserId();
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new BusinessException("用户不存在");
+        }
+
+        int favoriteCount = Math.toIntExact(favoriteMapper.selectCount(
+                new LambdaQueryWrapper<PostFavorite>().eq(PostFavorite::getUserId, userId)));
+        int likeCount = Math.toIntExact(likeMapper.selectCount(
+                new LambdaQueryWrapper<PostLike>().eq(PostLike::getUserId, userId)));
+        int postCount = Math.toIntExact(postMapper.selectCount(
+                new LambdaQueryWrapper<Post>().eq(Post::getAuthorId, userId).ne(Post::getStatus, "DELETED")));
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("user", user);
+        result.put("stats", Map.of(
+                "favoriteCount", favoriteCount,
+                "likeCount", likeCount,
+                "postCount", postCount
+        ));
+        return result;
+    }
+
+    @Override
+    public User updateBio(String bio) {
+        Long userId = getCurrentUserId();
+        User user = new User();
+        user.setId(userId);
+        user.setBio(bio);
+        userMapper.updateById(user);
+        return userMapper.selectById(userId);
+    }
+
+    @Override
+    public String uploadAvatar(MultipartFile file) {
+        Long userId = getCurrentUserId();
+        if (file.isEmpty()) {
+            throw new BusinessException("文件不能为空");
+        }
+        String originalName = file.getOriginalFilename();
+        String ext = "";
+        if (originalName != null && originalName.contains(".")) {
+            ext = originalName.substring(originalName.lastIndexOf("."));
+        }
+        String fileName = "avatar_" + userId + "_" + UUID.randomUUID().toString().substring(0, 8) + ext;
+
+        File dir = new File(uploadDir + "/avatars");
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
+
+        try {
+            file.transferTo(new File(dir, fileName));
+        } catch (IOException e) {
+            log.error("头像上传失败", e);
+            throw new BusinessException("头像上传失败");
+        }
+
+        String avatarUrl = "/uploads/avatars/" + fileName;
+        User user = new User();
+        user.setId(userId);
+        user.setAvatar(avatarUrl);
+        userMapper.updateById(user);
+
+        log.info("用户 {} 更新头像: {}", userId, avatarUrl);
+        return avatarUrl;
+    }
+
+    // ==================== 收藏 ====================
+
+    @Override
+    public void toggleFavorite(Long postId) {
+        Long userId = getCurrentUserId();
+        Post post = postMapper.selectById(postId);
+        if (post == null || "DELETED".equals(post.getStatus())) {
+            throw new BusinessException("帖子不存在");
+        }
+
+        PostFavorite existing = favoriteMapper.selectOne(
+                new LambdaQueryWrapper<PostFavorite>()
+                        .eq(PostFavorite::getUserId, userId)
+                        .eq(PostFavorite::getPostId, postId));
+        if (existing != null) {
+            favoriteMapper.deleteById(existing.getId());
+            log.info("用户 {} 取消收藏帖子 {}", userId, postId);
+        } else {
+            PostFavorite fav = new PostFavorite();
+            fav.setUserId(userId);
+            fav.setPostId(postId);
+            favoriteMapper.insert(fav);
+            log.info("用户 {} 收藏帖子 {}", userId, postId);
+        }
+    }
+
+    @Override
+    public boolean isFavorited(Long postId) {
+        Long userId = getCurrentUserId();
+        return favoriteMapper.selectCount(
+                new LambdaQueryWrapper<PostFavorite>()
+                        .eq(PostFavorite::getUserId, userId)
+                        .eq(PostFavorite::getPostId, postId)) > 0;
+    }
+
+    @Override
+    public Map<String, Object> getFavorites(Integer page, Integer size) {
+        Long userId = getCurrentUserId();
+        List<Long> postIds = favoriteMapper.selectFavoritePostIds(userId);
+        return buildPostListResult(postIds, page, size);
+    }
+
+    // ==================== 点赞 ====================
+
+    @Override
+    public void toggleLike(Long postId) {
+        Long userId = getCurrentUserId();
+        Post post = postMapper.selectById(postId);
+        if (post == null || "DELETED".equals(post.getStatus())) {
+            throw new BusinessException("帖子不存在");
+        }
+
+        PostLike existing = likeMapper.selectOne(
+                new LambdaQueryWrapper<PostLike>()
+                        .eq(PostLike::getUserId, userId)
+                        .eq(PostLike::getPostId, postId));
+        if (existing != null) {
+            likeMapper.deleteById(existing.getId());
+            log.info("用户 {} 取消点赞帖子 {}", userId, postId);
+        } else {
+            PostLike like = new PostLike();
+            like.setUserId(userId);
+            like.setPostId(postId);
+            likeMapper.insert(like);
+            log.info("用户 {} 点赞帖子 {}", userId, postId);
+        }
+    }
+
+    @Override
+    public boolean isLiked(Long postId) {
+        Long userId = getCurrentUserId();
+        return likeMapper.selectCount(
+                new LambdaQueryWrapper<PostLike>()
+                        .eq(PostLike::getUserId, userId)
+                        .eq(PostLike::getPostId, postId)) > 0;
+    }
+
+    @Override
+    public Map<String, Object> getLikes(Integer page, Integer size) {
+        Long userId = getCurrentUserId();
+        List<Long> postIds = likeMapper.selectLikePostIds(userId);
+        return buildPostListResult(postIds, page, size);
+    }
+
+    // ==================== 浏览历史 ====================
+
+    @Override
+    public void recordBrowse(Long postId) {
+        Long userId = getCurrentUserId();
+        Post post = postMapper.selectById(postId);
+        if (post == null || "DELETED".equals(post.getStatus())) {
+            throw new BusinessException("帖子不存在");
+        }
+        BrowseHistory history = new BrowseHistory();
+        history.setUserId(userId);
+        history.setPostId(postId);
+        historyMapper.insert(history);
+    }
+
+    @Override
+    public Map<String, Object> getHistory(Integer page, Integer size) {
+        Long userId = getCurrentUserId();
+        List<Long> postIds = historyMapper.selectHistoryPostIds(userId);
+        return buildPostListResult(postIds, page, size);
+    }
+
+    // ==================== 通用 ====================
+
+    private Map<String, Object> buildPostListResult(List<Long> postIds, Integer page, Integer size) {
+        int pageNum = page != null ? page : 1;
+        int pageSize = size != null ? size : 10;
+        int total = postIds.size();
+        int fromIndex = (pageNum - 1) * pageSize;
+        int toIndex = Math.min(fromIndex + pageSize, total);
+
+        List<Post> posts = new ArrayList<>();
+        if (fromIndex < total) {
+            List<Long> pageIds = postIds.subList(fromIndex, toIndex);
+            if (!pageIds.isEmpty()) {
+                posts = postMapper.selectList(
+                        new LambdaQueryWrapper<Post>().in(Post::getId, pageIds));
+                Map<Long, Post> postMap = posts.stream().collect(Collectors.toMap(Post::getId, p -> p));
+                posts = pageIds.stream()
+                        .map(postMap::get)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toList());
+            }
+        }
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("records", posts);
+        result.put("total", total);
+        result.put("page", pageNum);
+        result.put("size", pageSize);
+        return result;
+    }
+}
