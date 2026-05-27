@@ -47,6 +47,9 @@ public class UserService {
         if (user == null || !passwordEncoder.matches(dto.getPassword(), user.getPassword())) {
             throw new BusinessException(401, "账号或密码错误");
         }
+        if ("BANNED".equals(user.getStatus())) {
+            throw new BusinessException(403, "账号已被封禁，请联系管理员");
+        }
         String token = JwtUtils.generate(user.getId(), user.getGlobalRole());
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("token", token);

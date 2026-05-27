@@ -12,10 +12,15 @@ let ws = null
 let wsReconnectTimer = null
 let unreadTimer = null
 
+const isAdmin = computed(() => {
+  return user.value?.globalRole === 'SYS_ADMIN'
+})
+
 const activeMenu = computed(() => {
   if (route.path.startsWith('/forum')) return 'forum'
   if (route.path.startsWith('/chat')) return 'chat'
   if (route.path.startsWith('/profile')) return 'profile'
+  if (route.path.startsWith('/admin')) return 'admin'
   return ''
 })
 
@@ -143,6 +148,7 @@ defineExpose({ user, loadUser })
         私聊
         <span v-if="unreadCount > 0" class="unread-badge">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
       </el-menu-item>
+      <el-menu-item v-if="isAdmin" index="admin">管理后台</el-menu-item>
       <el-menu-item index="profile">个人中心</el-menu-item>
       <div class="navbar-right">
         <span class="navbar-user">用户: {{ user.username }} | 积分: {{ user.points ?? 0 }}</span>
@@ -150,7 +156,7 @@ defineExpose({ user, loadUser })
       </div>
     </el-menu>
 
-    <div class="app-content">
+    <div class="app-content" :class="{ 'admin-content': route.path.startsWith('/admin') }">
       <router-view :key="$route.fullPath" />
     </div>
   </div>
@@ -197,6 +203,10 @@ body {
 .app-content {
   min-height: calc(100vh - 60px);
   padding: 20px;
+}
+
+.admin-content {
+  padding: 0;
 }
 
 .unread-badge {

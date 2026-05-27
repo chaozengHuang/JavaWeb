@@ -1,6 +1,17 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { ElMessage } from 'element-plus'
 
+const isAdmin = () => {
+  try {
+    const stored = localStorage.getItem('user')
+    if (!stored) return false
+    const data = JSON.parse(stored)
+    return data.user?.globalRole === 'SYS_ADMIN'
+  } catch {
+    return false
+  }
+}
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -37,6 +48,33 @@ const router = createRouter({
       component: () => import('@/views/ChatView.vue'),
       meta: { requiresAuth: true },
     },
+    // ==================== 管理员路由 ====================
+    {
+      path: '/admin',
+      component: () => import('@/views/admin/AdminLayout.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true },
+      redirect: '/admin/users',
+      children: [
+        {
+          path: 'users',
+          name: 'adminUsers',
+          component: () => import('@/views/admin/UserManage.vue'),
+          meta: { requiresAuth: true, requiresAdmin: true },
+        },
+        {
+          path: 'posts',
+          name: 'adminPosts',
+          component: () => import('@/views/admin/PostManage.vue'),
+          meta: { requiresAuth: true, requiresAdmin: true },
+        },
+        {
+          path: 'comments',
+          name: 'adminComments',
+          component: () => import('@/views/admin/CommentManage.vue'),
+          meta: { requiresAuth: true, requiresAdmin: true },
+        },
+      ],
+    },
   ],
 })
 
@@ -47,6 +85,12 @@ router.beforeEach((to, from, next) => {
   if (to.meta.requiresAuth && !isLoggedIn) {
     ElMessage({ type: 'warning', message: '请先登录' })
     next('/auth')
+    return
+  }
+
+  if (to.meta.requiresAdmin && !isAdmin()) {
+    ElMessage({ type: 'error', message: '权限不足，需要管理员权限' })
+    next('/forum')
     return
   }
 
