@@ -176,29 +176,151 @@ Authorization: Bearer {{userToken}}
 
 
 ### ============================================================
-### 六、管理员模块 (需要管理员 token)
+### 六、管理员模块 — 用户管理 (需要管理员 token)
 ### ============================================================
 
-### 6-1 管理员查询帖子列表 (含已删除)
-GET {{baseUrl}}/admin/post?page=1&size=10
+### 6-1 查询用户列表 (全部)
+GET {{baseUrl}}/admin/users?page=1&size=10
 Authorization: Bearer {{adminToken}}
 
-### 6-2 管理员查询帖子 (关键词搜索)
-GET {{baseUrl}}/admin/post?keyword=测试&status=DELETED&page=1&size=10
+### 6-2 查询用户列表 (按关键词搜索)
+GET {{baseUrl}}/admin/users?keyword=test&page=1&size=10
 Authorization: Bearer {{adminToken}}
 
-### 6-3 管理员修改帖子状态
-PUT {{baseUrl}}/admin/post/{{postId}}/status?status=ACTIVE
+### 6-3 查询用户列表 (按状态筛选)
+GET {{baseUrl}}/admin/users?status=ACTIVE&page=1&size=10
 Authorization: Bearer {{adminToken}}
 
-### 6-4 管理员查询评论列表
-GET {{baseUrl}}/admin/comment?page=1&size=10
+### 6-4 查询用户列表 (按角色筛选)
+GET {{baseUrl}}/admin/users?role=USER&page=1&size=10
 Authorization: Bearer {{adminToken}}
 
-### 6-5 管理员物理删除评论
-DELETE {{baseUrl}}/admin/comment/{{commentId}}
+### 6-5 查看用户详情 (含发帖数、评论数)
+GET {{baseUrl}}/admin/users/1
 Authorization: Bearer {{adminToken}}
 
-### 6-6 管理员物理删除帖子
-DELETE {{baseUrl}}/admin/post/{{postId}}
+### 6-6 重置用户密码
+PUT {{baseUrl}}/admin/users/1/password
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "newPassword": "654321"
+}
+
+### 6-7 封禁用户
+PUT {{baseUrl}}/admin/users/1/status
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "status": "BANNED"
+}
+
+### 6-8 解封用户
+PUT {{baseUrl}}/admin/users/1/status
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "status": "ACTIVE"
+}
+
+
+### ============================================================
+### 七、管理员模块 — 帖子管理 (需要管理员 token)
+### ============================================================
+
+### 7-1 查询帖子列表 (全部)
+GET {{baseUrl}}/admin/posts?page=1&size=10
+Authorization: Bearer {{adminToken}}
+
+### 7-2 查询帖子列表 (按关键词搜索)
+GET {{baseUrl}}/admin/posts?keyword=测试&page=1&size=10
+Authorization: Bearer {{adminToken}}
+
+### 7-3 查询帖子列表 (按状态筛选 DELETED)
+GET {{baseUrl}}/admin/posts?status=DELETED&page=1&size=10
+Authorization: Bearer {{adminToken}}
+
+### 7-4 查询帖子列表 (按作者筛选)
+GET {{baseUrl}}/admin/posts?authorId=1&page=1&size=10
+Authorization: Bearer {{adminToken}}
+
+### 7-5 查看帖子详情
+GET {{baseUrl}}/admin/posts/{{postId}}
+Authorization: Bearer {{adminToken}}
+
+### 7-6 修改帖子状态为屏蔽
+PUT {{baseUrl}}/admin/posts/{{postId}}/status?status=BLOCKED
+Authorization: Bearer {{adminToken}}
+
+### 7-7 修改帖子状态为正常
+PUT {{baseUrl}}/admin/posts/{{postId}}/status?status=NORMAL
+Authorization: Bearer {{adminToken}}
+
+### 7-8 批量屏蔽帖子
+PUT {{baseUrl}}/admin/posts/batch-status
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "ids": [1, 2],
+  "status": "BLOCKED"
+}
+
+
+### ============================================================
+### 八、管理员模块 — 评论管理 (需要管理员 token)
+### ============================================================
+
+### 8-1 查询评论列表 (全部)
+GET {{baseUrl}}/admin/comments?page=1&size=10
+Authorization: Bearer {{adminToken}}
+
+### 8-2 查询评论列表 (按关键词搜索)
+GET {{baseUrl}}/admin/comments?keyword=测试&page=1&size=10
+Authorization: Bearer {{adminToken}}
+
+### 8-3 查询评论列表 (按状态筛选)
+GET {{baseUrl}}/admin/comments?status=DELETED&page=1&size=10
+Authorization: Bearer {{adminToken}}
+
+### 8-4 查询评论列表 (按帖子筛选)
+GET {{baseUrl}}/admin/comments?postId={{postId}}&page=1&size=10
+Authorization: Bearer {{adminToken}}
+
+### 8-5 查看评论详情
+GET {{baseUrl}}/admin/comments/{{commentId}}
+Authorization: Bearer {{adminToken}}
+
+### 8-6 修改评论状态为屏蔽
+PUT {{baseUrl}}/admin/comments/{{commentId}}/status?status=BLOCKED
+Authorization: Bearer {{adminToken}}
+
+### 8-7 修改评论状态为正常
+PUT {{baseUrl}}/admin/comments/{{commentId}}/status?status=NORMAL
+Authorization: Bearer {{adminToken}}
+
+### 8-8 批量屏蔽评论
+PUT {{baseUrl}}/admin/comments/batch-status
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "ids": [1, 2],
+  "status": "BLOCKED"
+}
+
+
+### ============================================================
+### 九、管理员模块 — 操作日志
+### ============================================================
+
+### 9-1 查询操作日志列表
+GET {{baseUrl}}/admin/logs?page=1&size=20
+Authorization: Bearer {{adminToken}}
+
+### 9-2 查询指定管理员的操作日志
+GET {{baseUrl}}/admin/logs?page=1&size=20&adminId=1
 Authorization: Bearer {{adminToken}}
