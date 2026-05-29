@@ -76,13 +76,26 @@ public class PostService {
                .orderByDesc(Post::getIsPinned)
                .orderByDesc(Post::getId);
 
-        return postMapper.selectPage(pageParam, wrapper);
+        IPage<Post> pageResult = postMapper.selectPage(pageParam, wrapper);
+        // 填充作者用户名
+        for (Post post : pageResult.getRecords()) {
+            User user = userMapper.selectById(post.getAuthorId());
+            if (user != null) {
+                post.setAuthorUsername(user.getUsername());
+            }
+        }
+        return pageResult;
     }
 
     public Post detail(Long id) {
         Post post = postMapper.selectById(id);
         if (post == null || "DELETED".equals(post.getStatus())) {
             throw new BusinessException("帖子不存在");
+        }
+        // 填充作者用户名
+        User user = userMapper.selectById(post.getAuthorId());
+        if (user != null) {
+            post.setAuthorUsername(user.getUsername());
         }
         return post;
     }

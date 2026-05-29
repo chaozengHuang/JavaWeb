@@ -31,6 +31,11 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/forum/:boardId',
+      name: 'board',
+      component: () => import('@/views/BoardView.vue'),
+    },
+    {
       path: '/profile',
       name: 'profile',
       component: () => import('@/views/ProfileView.vue'),
