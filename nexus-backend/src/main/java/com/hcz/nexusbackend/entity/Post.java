@@ -32,4 +32,7 @@ public class Post {
 
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updatedAt;
+
+    @TableField(exist = false)
+    private String authorUsername;
 }
