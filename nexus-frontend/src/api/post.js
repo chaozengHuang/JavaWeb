@@ -8,6 +8,10 @@ export const getPostDetail = (id) => {
   return request.get(`/post/${id}`)
 }
 
+export const getPostsByUser = (userId, page = 1, size = 10) => {
+  return request.get(`/post/user/${userId}`, { params: { page, size } })
+}
+
 export const createPost = (data) => {
   return request.post('/post', data)
 }

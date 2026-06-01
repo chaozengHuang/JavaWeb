@@ -5,9 +5,15 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.hcz.nexusbackend.dto.PostCreateDTO;
 import com.hcz.nexusbackend.dto.PostUpdateDTO;
+import com.hcz.nexusbackend.entity.Comment;
 import com.hcz.nexusbackend.entity.Post;
+import com.hcz.nexusbackend.entity.PostFavorite;
+import com.hcz.nexusbackend.entity.PostLike;
 import com.hcz.nexusbackend.entity.User;
 import com.hcz.nexusbackend.exception.BusinessException;
+import com.hcz.nexusbackend.mapper.CommentMapper;
+import com.hcz.nexusbackend.mapper.PostFavoriteMapper;
+import com.hcz.nexusbackend.mapper.PostLikeMapper;
 import com.hcz.nexusbackend.mapper.PostMapper;
 import com.hcz.nexusbackend.mapper.UserMapper;
 import com.hcz.nexusbackend.util.SecurityUtils;
@@ -22,6 +28,15 @@ public class PostService {
 
     @Autowired
     private UserMapper userMapper;
+
+    @Autowired
+    private PostLikeMapper postLikeMapper;
+
+    @Autowired
+    private PostFavoriteMapper postFavoriteMapper;
+
+    @Autowired
+    private CommentMapper commentMapper;
 
     public Post create(PostCreateDTO dto) {
         Long userId = SecurityUtils.getUserId();
@@ -77,12 +92,18 @@ public class PostService {
                .orderByDesc(Post::getId);
 
         IPage<Post> pageResult = postMapper.selectPage(pageParam, wrapper);
-        // 填充作者用户名
+        // 填充作者用户名和统计数量
         for (Post post : pageResult.getRecords()) {
             User user = userMapper.selectById(post.getAuthorId());
             if (user != null) {
                 post.setAuthorUsername(user.getUsername());
             }
+            post.setLikeCount(Math.toIntExact(postLikeMapper.selectCount(
+                    new LambdaQueryWrapper<PostLike>().eq(PostLike::getPostId, post.getId()))));
+            post.setFavoriteCount(Math.toIntExact(postFavoriteMapper.selectCount(
+                    new LambdaQueryWrapper<PostFavorite>().eq(PostFavorite::getPostId, post.getId()))));
+            post.setCommentCount(Math.toIntExact(commentMapper.selectCount(
+                    new LambdaQueryWrapper<Comment>().eq(Comment::getPostId, post.getId()).ne(Comment::getStatus, "DELETED"))));
         }
         return pageResult;
     }
@@ -97,7 +118,37 @@ public class PostService {
         if (user != null) {
             post.setAuthorUsername(user.getUsername());
         }
+        // 填充统计数量
+        post.setLikeCount(Math.toIntExact(postLikeMapper.selectCount(
+                new LambdaQueryWrapper<PostLike>().eq(PostLike::getPostId, id))));
+        post.setFavoriteCount(Math.toIntExact(postFavoriteMapper.selectCount(
+                new LambdaQueryWrapper<PostFavorite>().eq(PostFavorite::getPostId, id))));
+        post.setCommentCount(Math.toIntExact(commentMapper.selectCount(
+                new LambdaQueryWrapper<Comment>().eq(Comment::getPostId, id).ne(Comment::getStatus, "DELETED"))));
         return post;
+    }
+
+    public IPage<Post> listByUser(Long userId, Integer page, Integer size) {
+        Page<Post> pageParam = new Page<>(page != null ? page : 1, size != null ? size : 10);
+        LambdaQueryWrapper<Post> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Post::getAuthorId, userId)
+               .ne(Post::getStatus, "DELETED")
+               .orderByDesc(Post::getId);
+        IPage<Post> pageResult = postMapper.selectPage(pageParam, wrapper);
+        // 填充作者用户名和统计数量
+        for (Post post : pageResult.getRecords()) {
+            User user = userMapper.selectById(post.getAuthorId());
+            if (user != null) {
+                post.setAuthorUsername(user.getUsername());
+            }
+            post.setLikeCount(Math.toIntExact(postLikeMapper.selectCount(
+                    new LambdaQueryWrapper<PostLike>().eq(PostLike::getPostId, post.getId()))));
+            post.setFavoriteCount(Math.toIntExact(postFavoriteMapper.selectCount(
+                    new LambdaQueryWrapper<PostFavorite>().eq(PostFavorite::getPostId, post.getId()))));
+            post.setCommentCount(Math.toIntExact(commentMapper.selectCount(
+                    new LambdaQueryWrapper<Comment>().eq(Comment::getPostId, post.getId()).ne(Comment::getStatus, "DELETED"))));
+        }
+        return pageResult;
     }
 
     public void update(Long id, PostUpdateDTO dto) {

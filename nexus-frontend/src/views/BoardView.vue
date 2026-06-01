@@ -120,6 +120,18 @@ const viewPost = (post) => {
   router.push(`/post/${post.id}`)
 }
 
+const goToUserProfile = (authorId) => {
+  if (!authorId) return
+  const stored = localStorage.getItem('user')
+  const currentUserId = stored ? JSON.parse(stored).user?.id : null
+  // 如果是当前用户，跳转到自己的主页
+  if (currentUserId && Number(authorId) === currentUserId) {
+    router.push('/profile')
+  } else {
+    router.push(`/user/${authorId}`)
+  }
+}
+
 const formatDate = (date) => {
   if (!date) return ''
   const d = new Date(date)
@@ -187,7 +199,7 @@ onMounted(() => {
             </div>
             <h3 class="post-title">{{ post.title }}</h3>
             <div class="post-meta">
-              <span class="author">{{ post.authorUsername || '匿名' }}</span>
+              <span class="author" style="cursor:pointer;color:#409eff" @click.stop="goToUserProfile(post.authorId)">{{ post.authorUsername || '匿名' }}</span>
               <span class="time">{{ formatDate(post.createdAt) }}</span>
             </div>
           </div>
