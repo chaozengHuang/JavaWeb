@@ -49,6 +49,15 @@ public class PostController {
         return Result.success(post);
     }
 
+    @GetMapping("/user/{userId}")
+    public Result<IPage<Post>> listByUser(
+            @PathVariable Long userId,
+            @RequestParam(value = "page", required = false) Integer page,
+            @RequestParam(value = "size", required = false) Integer size) {
+        IPage<Post> result = postService.listByUser(userId, page, size);
+        return Result.success(result);
+    }
+
     @PutMapping("/{id}")
     public Result<Void> update(@PathVariable Long id, @RequestBody @Valid PostUpdateDTO dto) {
         postService.update(id, dto);

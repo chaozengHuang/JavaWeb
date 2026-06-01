@@ -83,6 +83,26 @@ public class ProfileServiceImpl implements ProfileService {
     }
 
     @Override
+    public Map<String, Object> getPublicProfile(Long userId) {
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new BusinessException("用户不存在");
+        }
+
+        int postCount = Math.toIntExact(postMapper.selectCount(
+                new LambdaQueryWrapper<Post>().eq(Post::getAuthorId, userId).ne(Post::getStatus, "DELETED")));
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("user", user);
+        result.put("stats", Map.of(
+                "favoriteCount", 0,
+                "likeCount", 0,
+                "postCount", postCount
+        ));
+        return result;
+    }
+
+    @Override
     public User updateBio(String bio) {
         Long userId = getCurrentUserId();
         User user = new User();

@@ -59,11 +59,19 @@ public class CommentService {
     }
 
     public List<Comment> list(Long postId) {
-        return commentMapper.selectList(
+        List<Comment> comments = commentMapper.selectList(
                 new LambdaQueryWrapper<Comment>()
                         .eq(Comment::getPostId, postId)
                         .ne(Comment::getStatus, "DELETED")
                         .orderByAsc(Comment::getId));
+        // 填充评论作者用户名
+        for (Comment comment : comments) {
+            User author = userMapper.selectById(comment.getAuthorId());
+            if (author != null) {
+                comment.setAuthorUsername(author.getUsername());
+            }
+        }
+        return comments;
     }
 
     public void delete(Long id) {

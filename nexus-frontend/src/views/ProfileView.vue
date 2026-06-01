@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import {
   getProfile, updateBio, uploadAvatar,
@@ -7,8 +8,13 @@ import {
   getLikes, removeLike,
   getHistory,
 } from '@/api/profile'
+import { getUserInfoById, getPublicProfile } from '@/api/user'
+import { getPostsByUser } from '@/api/post'
 
 const BASE_URL = 'http://localhost:8080'
+
+const route = useRoute()
+const router = useRouter()
 
 // ==================== 状态 ====================
 const activeTab = ref('info')
@@ -17,6 +23,12 @@ const stats = ref({ favoriteCount: 0, likeCount: 0, postCount: 0 })
 const bioInput = ref('')
 const bioEditing = ref(false)
 const avatarUploading = ref(false)
+
+const targetUserId = computed(() => route.params.userId)
+const isOtherUser = computed(() => {
+  if (!targetUserId.value) return false
+  return Number(targetUserId.value) !== currentUser.value.id
+})
 
 // 列表
 const loading = ref(false)
@@ -54,9 +66,16 @@ const pageKey = computed(() => `profile_${activeTab.value}`)
 // ==================== 加载逻辑 ====================
 const loadProfile = async () => {
   try {
-    const res = await getProfile()
-    profile.value = res.data?.user || null
-    stats.value = res.data?.stats || { favoriteCount: 0, likeCount: 0, postCount: 0 }
+    let res
+    if (isOtherUser.value) {
+      res = await getPublicProfile(targetUserId.value)
+      profile.value = res.data?.user || null
+      stats.value = res.data?.stats || { favoriteCount: 0, likeCount: 0, postCount: 0 }
+    } else {
+      res = await getProfile()
+      profile.value = res.data?.user || null
+      stats.value = res.data?.stats || { favoriteCount: 0, likeCount: 0, postCount: 0 }
+    }
     bioInput.value = profile.value?.bio || ''
   } catch (err) {
     ElMessage({ type: 'error', message: err.message || '加载失败' })
@@ -74,6 +93,10 @@ const loadList = async (page = 1) => {
       res = await getLikes(page, listPageSize.value)
     } else if (activeTab.value === 'history') {
       res = await getHistory(page, listPageSize.value)
+    } else if (activeTab.value === 'posts') {
+      res = await getPostsByUser(targetUserId.value, page, listPageSize.value)
+    } else if (activeTab.value === 'myPosts') {
+      res = await getPostsByUser(currentUser.value.id, page, listPageSize.value)
     }
     if (res) {
       listData.value = res.data?.records || []
@@ -87,6 +110,11 @@ const loadList = async (page = 1) => {
 }
 
 // ==================== 操作 ====================
+const startConversation = () => {
+  if (!targetUserId.value) return
+  router.push(`/chat/${targetUserId.value}`)
+}
+
 const handleSaveBio = async () => {
   try {
     const res = await updateBio(bioInput.value)
@@ -164,6 +192,10 @@ const handlePageChange = (page) => {
   loadList(page)
 }
 
+const viewPost = (postId) => {
+  router.push(`/post/${postId}`)
+}
+
 const formatTime = (time) => {
   if (!time) return ''
   return time.replace('T', ' ').substring(0, 19)
@@ -183,9 +215,11 @@ onMounted(() => {
     <!-- 选项卡 -->
     <el-tabs v-model="activeTab" @tab-change="handleTabChange">
       <el-tab-pane label="基本信息" name="info" />
-      <el-tab-pane label="我的收藏" name="favorites" />
-      <el-tab-pane label="我的点赞" name="likes" />
-      <el-tab-pane label="浏览历史" name="history" />
+      <el-tab-pane v-if="!isOtherUser" label="我的收藏" name="favorites" />
+      <el-tab-pane v-if="!isOtherUser" label="我的点赞" name="likes" />
+      <el-tab-pane v-if="!isOtherUser" label="我的帖子" name="myPosts" />
+      <el-tab-pane v-if="isOtherUser" :label="profile?.username + '的帖子'" name="posts" />
+      <el-tab-pane v-if="!isOtherUser" label="浏览历史" name="history" />
     </el-tabs>
 
     <!-- ==================== 基本信息 ==================== -->
@@ -194,9 +228,9 @@ onMounted(() => {
         <!-- 头像 -->
         <div class="avatar-section" v-loading="avatarUploading">
           <el-avatar :size="100" :src="avatarUrl" class="profile-avatar">
-            {{ currentUser.username?.charAt(0) }}
+            {{ profile?.username?.charAt(0) }}
           </el-avatar>
-          <label class="avatar-upload-label">
+          <label v-if="!isOtherUser" class="avatar-upload-label">
             <input
               type="file"
               accept="image/*"
@@ -210,9 +244,12 @@ onMounted(() => {
         <!-- 基本信息卡片 -->
         <div class="info-cards">
           <el-card shadow="hover" class="info-card">
-            <div class="info-row"><strong>用户名：</strong>{{ currentUser.username || '-' }}</div>
-            <div class="info-row"><strong>角色：</strong>{{ currentUser.globalRole === 'SYS_ADMIN' ? '管理员' : '普通用户' }}</div>
-            <div class="info-row"><strong>积分：</strong>{{ currentUser.points ?? 0 }}</div>
+            <div class="info-row"><strong>用户名：</strong>{{ profile?.username || '-' }}</div>
+            <div class="info-row"><strong>角色：</strong>{{ profile?.globalRole === 'SYS_ADMIN' ? '管理员' : '普通用户' }}</div>
+            <div class="info-row"><strong>积分：</strong>{{ profile?.points ?? 0 }}</div>
+          </el-card>
+          <el-card v-if="isOtherUser" shadow="hover" class="info-card">
+            <el-button type="primary" @click="startConversation">发起对话</el-button>
           </el-card>
           <el-card shadow="hover" class="info-card stats-card">
             <div class="stats-grid">
@@ -220,11 +257,11 @@ onMounted(() => {
                 <div class="stat-num">{{ stats.postCount }}</div>
                 <div class="stat-label">发帖</div>
               </div>
-              <div class="stat-item">
+              <div v-if="!isOtherUser" class="stat-item">
                 <div class="stat-num">{{ stats.favoriteCount }}</div>
                 <div class="stat-label">收藏</div>
               </div>
-              <div class="stat-item">
+              <div v-if="!isOtherUser" class="stat-item">
                 <div class="stat-num">{{ stats.likeCount }}</div>
                 <div class="stat-label">点赞</div>
               </div>
@@ -239,7 +276,7 @@ onMounted(() => {
           <div class="card-header">
             <span>个人简介</span>
             <el-button
-              v-if="!bioEditing"
+              v-if="!bioEditing && !isOtherUser"
               type="primary"
               size="small"
               text
@@ -279,6 +316,8 @@ onMounted(() => {
             :key="item.id"
             shadow="hover"
             class="post-card"
+            :class="{ 'clickable': activeTab === 'posts' || activeTab === 'myPosts' }"
+            @click="(activeTab === 'posts' || activeTab === 'myPosts') && viewPost(item.id)"
           >
             <div class="post-card-body">
               <div class="post-card-main">
@@ -445,6 +484,10 @@ onMounted(() => {
 
 .post-card {
   border-radius: 8px;
+}
+
+.clickable {
+  cursor: pointer;
 }
 
 .post-card-body {

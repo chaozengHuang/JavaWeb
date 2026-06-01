@@ -35,4 +35,13 @@ public class Post {
 
     @TableField(exist = false)
     private String authorUsername;
+
+    @TableField(exist = false)
+    private Integer likeCount;
+
+    @TableField(exist = false)
+    private Integer favoriteCount;
+
+    @TableField(exist = false)
+    private Integer commentCount;
 }

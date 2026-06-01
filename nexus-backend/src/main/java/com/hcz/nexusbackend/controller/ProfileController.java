@@ -31,6 +31,11 @@ public class ProfileController {
         return Result.success(profileService.getProfile());
     }
 
+    @GetMapping("/public/{userId}")
+    public Result<Map<String, Object>> getPublicProfile(@PathVariable Long userId) {
+        return Result.success(profileService.getPublicProfile(userId));
+    }
+
     @PutMapping("/bio")
     public Result<User> updateBio(@RequestBody Map<String, String> body) {
         String bio = body.getOrDefault("bio", "");

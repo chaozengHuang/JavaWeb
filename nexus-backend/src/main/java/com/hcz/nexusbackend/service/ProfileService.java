@@ -10,6 +10,8 @@ public interface ProfileService {
     // 个人信息
     Map<String, Object> getProfile();
 
+    Map<String, Object> getPublicProfile(Long userId);
+
     User updateBio(String bio);
 
     String uploadAvatar(MultipartFile file);
