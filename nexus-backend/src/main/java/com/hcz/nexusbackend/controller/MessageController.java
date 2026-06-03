@@ -1,7 +1,6 @@
 package com.hcz.nexusbackend.controller;
 
 import com.hcz.nexusbackend.common.Result;
-import com.hcz.nexusbackend.entity.Message;
 import com.hcz.nexusbackend.service.MessageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,7 +20,7 @@ public class MessageController {
     private MessageService messageService;
 
     @GetMapping("/history/{userId}")
-    public Result<List<Message>> getHistory(@PathVariable Long userId) {
+    public Result<List<Map<String, Object>>> getHistory(@PathVariable Long userId) {
         return Result.success(messageService.getHistory(userId));
     }
 
