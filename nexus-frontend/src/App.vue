@@ -238,6 +238,8 @@ defineExpose({ user, loadUser })
             <div style="font-size:12px;color:#e6a23c;margin-top:4px;">积分: {{ user.points ?? 0 }}</div>
           </div>
           <el-divider style="margin:0;" />
+          <el-button text style="width:100%;" @click="$router.push('/user/' + user.id)">个人主页</el-button>
+          <el-divider style="margin:8px 0;" />
           <el-button type="danger" text style="width:100%;" @click="handleLogout">退出登录</el-button>
         </el-popover>
       </div>

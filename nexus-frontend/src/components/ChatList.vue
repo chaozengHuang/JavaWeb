@@ -22,7 +22,8 @@ const emit = defineEmits(['select'])
       :class="['chat-list__item', { 'chat-list__item--active': chat.userId === activeUserId }]"
       @click="emit('select', chat.userId)"
     >
-      <div class="chat-list__avatar">{{ chat.username?.charAt(0) }}</div>
+      <img v-if="chat.avatar" :src="'http://localhost:8081' + chat.avatar" class="chat-list__avatar" />
+      <div v-else class="chat-list__avatar">{{ chat.username?.charAt(0) }}</div>
       <div class="chat-list__info">
         <div class="chat-list__name">{{ chat.username }}</div>
         <div class="chat-list__preview">{{ chat.lastMessage || '' }}</div>
@@ -79,6 +80,7 @@ const emit = defineEmits(['select'])
   font-weight: 600;
   flex-shrink: 0;
   margin-right: 12px;
+  object-fit: cover;
 }
 
 .chat-list__info {
