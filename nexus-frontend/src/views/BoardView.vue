@@ -1,31 +1,45 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getBoardList } from '@/api/board'
-import { getPostList, createPost } from '@/api/post'
-import { ElMessage } from 'element-plus'
+import { getBoardDetail, hidePost, showPost, deleteBoardPost, getMyRole, joinBoard, leaveBoard, getLeaderboard } from '@/api/board'
+import { getPostList, createPost, setPin, setFeature } from '@/api/post'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import BoardManage from '@/components/BoardManage.vue'
 
 const route = useRoute()
 const router = useRouter()
 const boards = ref([])
 const currentBoard = ref(null)
+const boardDetail = ref(null)
 const postLoading = ref(false)
 const dialogVisible = ref(false)
 const createLoading = ref(false)
+const manageDialogVisible = ref(false)
+const myBoardRole = ref(null)
+const leaderboardVisible = ref(false)
+const leaderboard = ref([])
+const joinLoading = ref(false)
 
 const boardId = computed(() => route.params.boardId)
 
-// 分页参数
+const isSysAdmin = computed(() => {
+  const stored = localStorage.getItem('user')
+  if (stored) {
+    try { return JSON.parse(stored).user?.globalRole === 'SYS_ADMIN' } catch { return false }
+  }
+  return false
+})
+const isOwner = computed(() => myBoardRole.value === 'OWNER' || isSysAdmin.value)
+const isManager = computed(() => myBoardRole.value === 'OWNER' || myBoardRole.value === 'ADMIN' || isSysAdmin.value)
+
 const pagination = ref({
   current: 1,
   size: 20,
   total: 0,
 })
 
-// 帖子列表
 const posts = ref([])
 
-// 创建帖子表单
 const createForm = ref({
   title: '',
   content: '',
@@ -33,29 +47,54 @@ const createForm = ref({
   rewardPoints: 0,
 })
 
-const fetchBoards = async () => {
+const currentUserId = computed(() => {
+  const stored = localStorage.getItem('user')
+  if (stored) {
+    try { return JSON.parse(stored).user?.id } catch { return null }
+  }
+  return null
+})
+
+const fetchBoardDetail = async () => {
+  const bid = Number(boardId.value)
+  if (!bid || isNaN(bid)) {
+    router.push('/forum')
+    return
+  }
   try {
-    const res = await getBoardList()
-    boards.value = res || []
-    currentBoard.value = boards.value.find(b => b.id === Number(boardId.value))
+    const res = await getBoardDetail(bid)
+    boardDetail.value = res.data || null
+    currentBoard.value = boardDetail.value?.board || null
+    myBoardRole.value = boardDetail.value?.currentUserRole || null
     if (!currentBoard.value) {
       ElMessage.warning('贴吧不存在')
       router.push('/forum')
     }
   } catch (error) {
     ElMessage({ type: 'error', message: error.message || '获取贴吧信息失败' })
+    router.push('/forum')
   }
 }
 
+const fetchMyRole = async () => {
+  const bid = Number(boardId.value)
+  if (!bid || isNaN(bid)) return
+  try {
+    const res = await getMyRole(bid)
+    myBoardRole.value = res.data?.role || null
+  } catch { myBoardRole.value = null }
+}
+
 const fetchPosts = async () => {
+  const bid = Number(boardId.value)
+  if (!bid || isNaN(bid)) return
   postLoading.value = true
   try {
     const res = await getPostList({
-      boardId: boardId.value,
+      boardId: bid,
       page: pagination.value.current,
       size: pagination.value.size,
     })
-    // PostController 返回 Result<IPage>
     const pageData = (res && res.data && res.data.records) ? res.data : { records: [], total: 0 }
     posts.value = pageData.records || []
     pagination.value.total = pageData.total || 0
@@ -104,6 +143,7 @@ const handleCreate = async () => {
     ElMessage.success('发帖成功')
     dialogVisible.value = false
     fetchPosts()
+    fetchBoardDetail()
   } catch (error) {
     ElMessage({ type: 'error', message: error.message || '发帖失败' })
   } finally {
@@ -122,13 +162,114 @@ const viewPost = (post) => {
 
 const goToUserProfile = (authorId) => {
   if (!authorId) return
-  const stored = localStorage.getItem('user')
-  const currentUserId = stored ? JSON.parse(stored).user?.id : null
-  // 如果是当前用户，跳转到自己的主页
-  if (currentUserId && Number(authorId) === currentUserId) {
+  if (currentUserId.value && Number(authorId) === currentUserId.value) {
     router.push('/profile')
   } else {
     router.push(`/user/${authorId}`)
+  }
+}
+
+// 吧管理操作
+const handleHidePost = async (postId) => {
+  try {
+    await hidePost(Number(boardId.value), postId)
+    ElMessage.success('已隐藏帖子')
+    fetchPosts()
+  } catch (err) {
+    ElMessage.error(err.message || '操作失败')
+  }
+}
+
+const handleShowPost = async (postId) => {
+  try {
+    await showPost(Number(boardId.value), postId)
+    ElMessage.success('已取消隐藏')
+    fetchPosts()
+  } catch (err) {
+    ElMessage.error(err.message || '操作失败')
+  }
+}
+
+const handleDeletePost = async (postId) => {
+  try {
+    await ElMessageBox.confirm('确定删除这条帖子吗？', '提示', { type: 'warning' })
+    await deleteBoardPost(Number(boardId.value), postId)
+    ElMessage.success('已删除帖子')
+    fetchPosts()
+  } catch (err) {
+    if (err !== 'cancel') {
+      ElMessage.error(err.message || '操作失败')
+    }
+  }
+}
+
+const handlePin = async (postId, currentPinned) => {
+  try {
+    await setPin(postId, currentPinned ? 0 : 1)
+    ElMessage.success(currentPinned ? '已取消置顶' : '已置顶')
+    fetchPosts()
+  } catch (err) {
+    ElMessage.error(err.message || '操作失败')
+  }
+}
+
+const handleFeature = async (postId, currentFeatured) => {
+  try {
+    await setFeature(postId, currentFeatured ? 0 : 1)
+    ElMessage.success(currentFeatured ? '已取消加精' : '已加精')
+    fetchPosts()
+  } catch (err) {
+    ElMessage.error(err.message || '操作失败')
+  }
+}
+
+const openManageDialog = () => {
+  manageDialogVisible.value = true
+}
+
+const onManageClose = () => {
+  manageDialogVisible.value = false
+  fetchBoardDetail()
+  fetchMyRole()
+}
+
+const onBoardDeleted = () => {
+  manageDialogVisible.value = false
+}
+
+const handleJoin = async () => {
+  joinLoading.value = true
+  try {
+    await joinBoard(Number(boardId.value))
+    ElMessage.success('已加入贴吧')
+    fetchBoardDetail()
+  } catch (err) {
+    ElMessage.error(err.message || '加入失败')
+  } finally {
+    joinLoading.value = false
+  }
+}
+
+const handleLeave = async () => {
+  try {
+    await ElMessageBox.confirm('确定退出该吧吗？', '提示', { type: 'warning' })
+    await leaveBoard(Number(boardId.value))
+    ElMessage.success('已退出贴吧')
+    fetchBoardDetail()
+  } catch (err) {
+    if (err !== 'cancel') {
+      ElMessage.error(err.message || '退出失败')
+    }
+  }
+}
+
+const fetchLeaderboard = async () => {
+  try {
+    const res = await getLeaderboard(Number(boardId.value))
+    leaderboard.value = res.data || []
+    leaderboardVisible.value = true
+  } catch (err) {
+    ElMessage.error(err.message || '获取排行榜失败')
   }
 }
 
@@ -145,7 +286,7 @@ const formatDate = (date) => {
 }
 
 onMounted(() => {
-  fetchBoards()
+  fetchBoardDetail()
   fetchPosts()
 })
 </script>
@@ -159,9 +300,46 @@ onMounted(() => {
         </svg>
         返回贴吧列表
       </el-button>
-      <div v-if="currentBoard" class="board-title">
-        <h2>{{ currentBoard.name }}</h2>
-        <p class="board-desc">{{ currentBoard.description || '暂无描述' }}</p>
+    </div>
+
+    <!-- 吧信息卡片 -->
+    <div v-if="boardDetail" class="board-info-card">
+      <div class="board-info-header">
+        <div style="display:flex;align-items:center;gap:14px;">
+          <el-avatar :size="56" :src="boardDetail.board?.avatar ? 'http://localhost:8081' + boardDetail.board.avatar : ''" shape="square">
+            {{ boardDetail.board?.name?.charAt(0) || '吧' }}
+          </el-avatar>
+          <h2 style="margin:0;">{{ boardDetail.board?.name }}</h2>
+        </div>
+        <div class="board-info-actions">
+          <el-button v-if="!myBoardRole && !isSysAdmin" type="success" size="small" :loading="joinLoading" @click="handleJoin">加入贴吧</el-button>
+          <el-button v-if="myBoardRole && !isOwner && !isSysAdmin" type="warning" size="small" @click="handleLeave">退出贴吧</el-button>
+          <el-button v-if="isOwner" type="primary" size="small" @click="openManageDialog">管理吧</el-button>
+          <el-button size="small" @click="fetchLeaderboard">🏆 活跃榜</el-button>
+        </div>
+      </div>
+      <p class="board-desc">{{ boardDetail.board?.description || '暂无描述' }}</p>
+      <div class="board-info-meta">
+        <span>吧主：
+          <a class="link-user" @click="goToUserProfile(boardDetail.owner?.userId)">
+            {{ boardDetail.owner?.username || '未知' }}
+          </a>
+        </span>
+        <span v-if="boardDetail.admins?.length">
+          管理员：
+          <a
+            v-for="admin in boardDetail.admins"
+            :key="admin.userId"
+            class="link-user"
+            @click="goToUserProfile(admin.userId)"
+          >{{ admin.username }} </a>
+        </span>
+        <span>帖子：{{ boardDetail.postCount }}</span>
+        <span>成员：{{ boardDetail.memberCount }}</span>
+        <span v-if="isSysAdmin" class="role-badge sysadmin">系统管理员</span>
+        <span v-if="myBoardRole === 'OWNER'" class="role-badge owner">吧主</span>
+        <span v-else-if="myBoardRole === 'ADMIN'" class="role-badge admin">管理员</span>
+        <span v-else-if="myBoardRole === 'MUTED'" class="role-badge muted">已禁言</span>
       </div>
     </div>
 
@@ -195,7 +373,8 @@ onMounted(() => {
               <span v-if="post.isPinned" class="badge badge-pin">置顶</span>
               <span v-if="post.isGlobalPinned" class="badge badge-global">全局置顶</span>
               <span v-if="post.isFeatured" class="badge badge-featured">精华</span>
-              <span v-if="post.type === 'REWARD'" class="badge badge-reward">悬赏</span>
+              <span v-if="post.type === 'REWARD' && post.rewardPoints > 0" class="badge badge-reward">悬赏 {{ post.rewardPoints }}分</span>
+              <span v-if="post.type === 'REWARD' && post.rewardPoints === 0" class="badge badge-resolved">已采纳</span>
             </div>
             <h3 class="post-title">{{ post.title }}</h3>
             <div class="post-meta">
@@ -203,13 +382,40 @@ onMounted(() => {
               <span class="time">{{ formatDate(post.createdAt) }}</span>
             </div>
           </div>
-          <div class="post-stats">
-            <span class="stat">
-              <svg t="Comment" width="14" height="14" viewBox="0 0 24 24" fill="none">
-                <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2v10z" stroke="currentColor" stroke-width="1.5"/>
-              </svg>
-              {{ post.commentCount || 0 }}
-            </span>
+          <div class="post-right">
+            <div class="post-stats">
+              <span class="stat">
+                <svg t="Comment" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                  <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2v10z" stroke="currentColor" stroke-width="1.5"/>
+                </svg>
+                {{ post.commentCount || 0 }}
+              </span>
+            </div>
+            <!-- 吧管理按钮 -->
+            <div v-if="isManager" class="post-manage-actions" @click.stop>
+              <el-dropdown trigger="click">
+                <el-button size="small" text>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="5" r="2" fill="currentColor"/>
+                    <circle cx="12" cy="12" r="2" fill="currentColor"/>
+                    <circle cx="12" cy="19" r="2" fill="currentColor"/>
+                  </svg>
+                </el-button>
+                <template #dropdown>
+                  <el-dropdown-menu>
+                    <el-dropdown-item @click="handlePin(post.id, post.isPinned)">
+                      {{ post.isPinned ? '取消置顶' : '置顶' }}
+                    </el-dropdown-item>
+                    <el-dropdown-item @click="handleFeature(post.id, post.isFeatured)">
+                      {{ post.isFeatured ? '取消加精' : '加精' }}
+                    </el-dropdown-item>
+                    <el-dropdown-item divided @click="handleHidePost(post.id)" v-if="post.status === 'ACTIVE'">隐藏帖子</el-dropdown-item>
+                    <el-dropdown-item @click="handleShowPost(post.id)" v-if="post.status === 'HIDDEN'">取消隐藏</el-dropdown-item>
+                    <el-dropdown-item divided @click="handleDeletePost(post.id)" style="color:#f56c6c">删除帖子</el-dropdown-item>
+                  </el-dropdown-menu>
+                </template>
+              </el-dropdown>
+            </div>
           </div>
         </div>
       </div>
@@ -254,6 +460,44 @@ onMounted(() => {
         <el-button type="primary" :loading="createLoading" @click="handleCreate">发表</el-button>
       </template>
     </el-dialog>
+
+    <!-- 吧管理弹窗 -->
+    <BoardManage
+      v-if="manageDialogVisible"
+      :board-id="Number(boardId)"
+      :board-detail="boardDetail?.board"
+      :current-user-role="myBoardRole"
+      @close="onManageClose"
+      @board-deleted="onBoardDeleted"
+      @refresh="fetchBoardDetail(); fetchPosts()"
+    />
+
+    <!-- 活跃度排行榜 -->
+    <el-dialog v-model="leaderboardVisible" title="🏆 活跃度排行榜" width="480px">
+      <el-table :data="leaderboard" stripe max-height="400">
+        <el-table-column prop="rank" label="排名" width="60">
+          <template #default="{ row }">
+            <span v-if="row.rank === 1">🥇</span>
+            <span v-else-if="row.rank === 2">🥈</span>
+            <span v-else-if="row.rank === 3">🥉</span>
+            <span v-else>{{ row.rank }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="username" label="用户">
+          <template #default="{ row }">
+            <span style="cursor:pointer;color:#409eff" @click="goToUserProfile(row.userId)">{{ row.username }}</span>
+            <el-tag v-if="row.boardRole === 'OWNER'" size="small" type="danger" style="margin-left:6px">吧主</el-tag>
+            <el-tag v-else-if="row.boardRole === 'ADMIN'" size="small" type="warning" style="margin-left:6px">管理</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="activityPoints" label="活跃度" width="80">
+          <template #default="{ row }">
+            <strong>{{ row.activityPoints }}</strong>
+          </template>
+        </el-table-column>
+      </el-table>
+      <div v-if="leaderboard.length === 0" style="text-align:center;padding:30px;color:#909399;">暂无数据</div>
+    </el-dialog>
   </div>
 </template>
 
@@ -264,20 +508,65 @@ onMounted(() => {
 }
 
 .board-header {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
-.board-title h2 {
-  margin: 16px 0 4px 0;
+.board-info-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-bottom: 16px;
+  border: 1px solid #e4e7ed;
+}
+
+.board-info-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.board-info-header h2 {
+  margin: 0;
   font-size: 22px;
   color: #303133;
 }
 
 .board-desc {
-  margin: 0;
+  margin: 10px 0;
   font-size: 14px;
-  color: #909399;
+  color: #606266;
+  line-height: 1.6;
 }
+
+.board-info-meta {
+  display: flex;
+  gap: 24px;
+  font-size: 13px;
+  color: #909399;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.link-user {
+  color: #409eff;
+  cursor: pointer;
+}
+
+.link-user:hover {
+  text-decoration: underline;
+}
+
+.role-badge {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.role-badge.owner { background: #fef0f0; color: #f56c6c; }
+.role-badge.admin { background: #fdf6ec; color: #e6a23c; }
+.role-badge.sysadmin { background: #f0f0ff; color: #7c3aed; }
+.role-badge.muted { background: #f4f4f5; color: #909399; }
 
 .board-actions {
   margin-bottom: 16px;
@@ -338,25 +627,11 @@ onMounted(() => {
   border-radius: 4px;
 }
 
-.badge-pin {
-  background: #e6f0ff;
-  color: #409eff;
-}
-
-.badge-global {
-  background: #fff3e6;
-  color: #ff9900;
-}
-
-.badge-featured {
-  background: #fff1e6;
-  color: #ff6600;
-}
-
-.badge-reward {
-  background: #e6fff0;
-  color: #52c41a;
-}
+.badge-pin { background: #e6f0ff; color: #409eff; }
+.badge-global { background: #fff3e6; color: #ff9900; }
+.badge-featured { background: #fff1e6; color: #ff6600; }
+.badge-reward { background: #e6fff0; color: #52c41a; }
+.badge-resolved { background: #f0f0f0; color: #909399; }
 
 .post-title {
   margin: 0 0 8px 0;
@@ -375,6 +650,13 @@ onMounted(() => {
   color: #909399;
 }
 
+.post-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
 .post-stats {
   display: flex;
   gap: 16px;
@@ -386,6 +668,10 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+.post-manage-actions {
+  margin-left: 8px;
 }
 
 .pagination {

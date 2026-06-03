@@ -42,6 +42,11 @@ public class ProfileController {
         return Result.success("修改成功", profileService.updateBio(bio));
     }
 
+    @PutMapping
+    public Result<User> updateProfile(@RequestBody Map<String, String> body) {
+        return Result.success("修改成功", profileService.updateProfile(body));
+    }
+
     @PostMapping("/avatar")
     public Result<String> uploadAvatar(@RequestParam("file") MultipartFile file) {
         String url = profileService.uploadAvatar(file);
@@ -113,5 +118,17 @@ public class ProfileController {
             @RequestParam(value = "page", required = false) Integer page,
             @RequestParam(value = "size", required = false) Integer size) {
         return Result.success(profileService.getHistory(page, size));
+    }
+
+    @DeleteMapping("/history/{postId}")
+    public Result<Void> deleteHistory(@PathVariable Long postId) {
+        profileService.deleteHistoryByPostId(postId);
+        return Result.success();
+    }
+
+    @DeleteMapping("/history")
+    public Result<Void> clearHistory() {
+        profileService.clearHistory();
+        return Result.success();
     }
 }

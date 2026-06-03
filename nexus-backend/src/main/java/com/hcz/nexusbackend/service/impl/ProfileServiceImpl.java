@@ -6,11 +6,13 @@ import com.hcz.nexusbackend.entity.Post;
 import com.hcz.nexusbackend.entity.PostFavorite;
 import com.hcz.nexusbackend.entity.PostLike;
 import com.hcz.nexusbackend.entity.User;
+import com.hcz.nexusbackend.entity.UserBoardRelation;
 import com.hcz.nexusbackend.exception.BusinessException;
 import com.hcz.nexusbackend.mapper.BrowseHistoryMapper;
 import com.hcz.nexusbackend.mapper.PostFavoriteMapper;
 import com.hcz.nexusbackend.mapper.PostLikeMapper;
 import com.hcz.nexusbackend.mapper.PostMapper;
+import com.hcz.nexusbackend.mapper.UserBoardRelationMapper;
 import com.hcz.nexusbackend.mapper.UserMapper;
 import com.hcz.nexusbackend.service.ProfileService;
 import com.hcz.nexusbackend.util.SecurityUtils;
@@ -43,6 +45,9 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Autowired
     private BrowseHistoryMapper historyMapper;
+
+    @Autowired
+    private UserBoardRelationMapper boardRelationMapper;
 
     @Value("${file.upload.dir:uploads}")
     private String uploadDir;
@@ -113,6 +118,20 @@ public class ProfileServiceImpl implements ProfileService {
     }
 
     @Override
+    public User updateProfile(Map<String, String> fields) {
+        Long userId = getCurrentUserId();
+        User user = new User();
+        user.setId(userId);
+        if (fields.containsKey("email")) user.setEmail(fields.get("email"));
+        if (fields.containsKey("phone")) user.setPhone(fields.get("phone"));
+        if (fields.containsKey("jobNature")) user.setJobNature(fields.get("jobNature"));
+        if (fields.containsKey("location")) user.setLocation(fields.get("location"));
+        if (fields.containsKey("bio")) user.setBio(fields.get("bio"));
+        userMapper.updateById(user);
+        return userMapper.selectById(userId);
+    }
+
+    @Override
     public String uploadAvatar(MultipartFile file) {
         Long userId = getCurrentUserId();
         if (file.isEmpty()) {
@@ -125,16 +144,24 @@ public class ProfileServiceImpl implements ProfileService {
         }
         String fileName = "avatar_" + userId + "_" + UUID.randomUUID().toString().substring(0, 8) + ext;
 
+        // 使用绝对路径
         File dir = new File(uploadDir + "/avatars");
         if (!dir.exists()) {
-            dir.mkdirs();
+            boolean created = dir.mkdirs();
+            if (!created) {
+                log.error("创建头像目录失败: {}", dir.getAbsolutePath());
+                throw new BusinessException("头像上传失败：无法创建目录");
+            }
         }
+        log.info("头像上传目录: {}", dir.getAbsolutePath());
 
+        File destFile = new File(dir, fileName);
         try {
-            file.transferTo(new File(dir, fileName));
+            file.transferTo(destFile);
+            log.info("头像文件保存成功: {}", destFile.getAbsolutePath());
         } catch (IOException e) {
-            log.error("头像上传失败", e);
-            throw new BusinessException("头像上传失败");
+            log.error("头像上传失败, dest={}", destFile.getAbsolutePath(), e);
+            throw new BusinessException("头像上传失败: " + e.getMessage());
         }
 
         String avatarUrl = "/uploads/avatars/" + fileName;
@@ -169,6 +196,8 @@ public class ProfileServiceImpl implements ProfileService {
             fav.setUserId(userId);
             fav.setPostId(postId);
             favoriteMapper.insert(fav);
+            // 收藏+1活跃度
+            addActivity(userId, post.getBoardId(), 1);
             log.info("用户 {} 收藏帖子 {}", userId, postId);
         }
     }
@@ -211,6 +240,8 @@ public class ProfileServiceImpl implements ProfileService {
             like.setUserId(userId);
             like.setPostId(postId);
             likeMapper.insert(like);
+            // 点赞+1活跃度
+            addActivity(userId, post.getBoardId(), 1);
             log.info("用户 {} 点赞帖子 {}", userId, postId);
         }
     }
@@ -253,7 +284,38 @@ public class ProfileServiceImpl implements ProfileService {
         return buildPostListResult(postIds, page, size);
     }
 
+    @Override
+    public void deleteHistoryByPostId(Long postId) {
+        Long userId = getCurrentUserId();
+        historyMapper.delete(
+                new LambdaQueryWrapper<BrowseHistory>()
+                        .eq(BrowseHistory::getUserId, userId)
+                        .eq(BrowseHistory::getPostId, postId));
+        log.info("用户 {} 删除了帖子 {} 的浏览记录", userId, postId);
+    }
+
+    @Override
+    public void clearHistory() {
+        Long userId = getCurrentUserId();
+        historyMapper.delete(
+                new LambdaQueryWrapper<BrowseHistory>().eq(BrowseHistory::getUserId, userId));
+        log.info("用户 {} 清空了浏览历史", userId);
+    }
+
     // ==================== 通用 ====================
+
+    private void addActivity(Long userId, Long boardId, int points) {
+        UserBoardRelation rel = boardRelationMapper.selectOne(
+                new LambdaQueryWrapper<UserBoardRelation>()
+                        .eq(UserBoardRelation::getUserId, userId)
+                        .eq(UserBoardRelation::getBoardId, boardId));
+        if (rel != null) {
+            UserBoardRelation update = new UserBoardRelation();
+            update.setId(rel.getId());
+            update.setActivityPoints((rel.getActivityPoints() != null ? rel.getActivityPoints() : 0) + points);
+            boardRelationMapper.updateById(update);
+        }
+    }
 
     private Map<String, Object> buildPostListResult(List<Long> postIds, Integer page, Integer size) {
         int pageNum = page != null ? page : 1;

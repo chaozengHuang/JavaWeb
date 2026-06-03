@@ -191,4 +191,29 @@ public class AdminController {
             @RequestParam(required = false) Long adminId) {
         return Result.success(adminService.listLogs(page, size, adminId));
     }
+
+    // ==================== 吧管理 ====================
+
+    @GetMapping("/boards")
+    public Result<IPage<com.hcz.nexusbackend.entity.Board>> listBoards(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size) {
+        return Result.success(adminService.adminListBoards(keyword, status, page, size));
+    }
+
+    @PutMapping("/boards/{boardId}/status")
+    public Result<Void> updateBoardStatus(@PathVariable Long boardId,
+                                           @RequestParam String status) {
+        adminService.updateBoardStatus(boardId, status);
+        return Result.success("操作成功", null);
+    }
+
+    // ==================== 通知管理员 ====================
+
+    @GetMapping("/notify-admin")
+    public Result<Map<String, Object>> getNotifyAdmin() {
+        return Result.success(adminService.getNotifyCredentials());
+    }
 }

@@ -7,24 +7,24 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
-@TableName("board")
-public class Board {
+@TableName("recharge_order")
+public class RechargeOrder {
 
     @TableId(type = IdType.AUTO)
     private Long id;
 
-    private String name;
-    private String description;
-    private Long creatorId;
-    private String avatar;
+    private Long userId;
+    private String orderNo;
+    private BigDecimal amount;
+    private Integer points;
     private String status;
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
 
-    @TableField(fill = FieldFill.INSERT_UPDATE)
-    private LocalDateTime updatedAt;
+    private LocalDateTime completedAt;
 }

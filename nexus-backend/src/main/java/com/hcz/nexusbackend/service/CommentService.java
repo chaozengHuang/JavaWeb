@@ -7,13 +7,16 @@ import com.hcz.nexusbackend.dto.CommentCreateDTO;
 import com.hcz.nexusbackend.entity.Comment;
 import com.hcz.nexusbackend.entity.Post;
 import com.hcz.nexusbackend.entity.User;
+import com.hcz.nexusbackend.entity.UserBoardRelation;
 import com.hcz.nexusbackend.exception.BusinessException;
 import com.hcz.nexusbackend.mapper.CommentMapper;
 import com.hcz.nexusbackend.mapper.PostMapper;
+import com.hcz.nexusbackend.mapper.UserBoardRelationMapper;
 import com.hcz.nexusbackend.mapper.UserMapper;
 import com.hcz.nexusbackend.util.SecurityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -28,6 +31,9 @@ public class CommentService {
 
     @Autowired
     private UserMapper userMapper;
+
+    @Autowired
+    private UserBoardRelationMapper relationMapper;
 
     public Comment create(CommentCreateDTO dto) {
         Long userId = SecurityUtils.getUserId();
@@ -55,6 +61,20 @@ public class CommentService {
         comment.setIsAccepted(0);
         comment.setStatus("NORMAL");
         commentMapper.insert(comment);
+        // 评论+2活跃度
+        Long boardId = post.getBoardId();
+        if (boardId != null) {
+            UserBoardRelation rel = relationMapper.selectOne(
+                    new LambdaQueryWrapper<UserBoardRelation>()
+                            .eq(UserBoardRelation::getUserId, userId)
+                            .eq(UserBoardRelation::getBoardId, boardId));
+            if (rel != null) {
+                UserBoardRelation update = new UserBoardRelation();
+                update.setId(rel.getId());
+                update.setActivityPoints((rel.getActivityPoints() != null ? rel.getActivityPoints() : 0) + 2);
+                relationMapper.updateById(update);
+            }
+        }
         return comment;
     }
 
@@ -100,6 +120,7 @@ public class CommentService {
         commentMapper.updateById(update);
     }
 
+    @Transactional
     public void accept(Long id) {
         Long userId = SecurityUtils.getUserId();
         if (userId == null) {
@@ -110,10 +131,19 @@ public class CommentService {
         if (comment == null) {
             throw new BusinessException("评论不存在");
         }
+        if (comment.getIsAccepted() == 1) {
+            throw new BusinessException("该评论已被采纳");
+        }
 
         Post post = postMapper.selectById(comment.getPostId());
         if (post == null) {
             throw new BusinessException("帖子不存在");
+        }
+        if (!"REWARD".equals(post.getType())) {
+            throw new BusinessException("只有悬赏帖才可采纳");
+        }
+        if (post.getRewardPoints() == null || post.getRewardPoints() <= 0) {
+            throw new BusinessException("该悬赏帖积分已被领取");
         }
 
         User user = userMapper.selectById(userId);
@@ -124,23 +154,35 @@ public class CommentService {
         if (!post.getAuthorId().equals(userId) && !"SYS_ADMIN".equals(user.getGlobalRole())) {
             throw new BusinessException(403, "只有帖子作者或管理员可以采纳评论");
         }
+        if (comment.getAuthorId().equals(userId)) {
+            throw new BusinessException("不能采纳自己的评论");
+        }
+
+        // 检查该帖是否已有被采纳的评论
+        Long acceptedCount = commentMapper.selectCount(
+                new LambdaQueryWrapper<Comment>()
+                        .eq(Comment::getPostId, post.getId())
+                        .eq(Comment::getIsAccepted, 1));
+        if (acceptedCount > 0) {
+            throw new BusinessException("该悬赏帖已有被采纳的答案");
+        }
 
         Comment update = new Comment();
         update.setId(id);
         update.setIsAccepted(1);
         commentMapper.updateById(update);
 
-        if (post.getRewardPoints() != null && post.getRewardPoints() > 0) {
-            User commentAuthor = userMapper.selectById(comment.getAuthorId());
-            if (commentAuthor != null) {
-                commentAuthor.setPoints(commentAuthor.getPoints() + post.getRewardPoints());
-                userMapper.updateById(commentAuthor);
-            }
-            Post reset = new Post();
-            reset.setId(post.getId());
-            reset.setRewardPoints(0);
-            postMapper.updateById(reset);
+        // 转移积分
+        int rewardPoints = post.getRewardPoints();
+        User commentAuthor = userMapper.selectById(comment.getAuthorId());
+        if (commentAuthor != null) {
+            commentAuthor.setPoints((commentAuthor.getPoints() != null ? commentAuthor.getPoints() : 0) + rewardPoints);
+            userMapper.updateById(commentAuthor);
         }
+        Post reset = new Post();
+        reset.setId(post.getId());
+        reset.setRewardPoints(0);
+        postMapper.updateById(reset);
     }
 
     public IPage<Comment> adminList(String keyword, String status, Long postId, Integer page, Integer size) {

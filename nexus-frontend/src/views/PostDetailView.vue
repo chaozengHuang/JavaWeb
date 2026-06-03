@@ -3,8 +3,9 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getPostDetail, updatePost, deletePost } from '@/api/post'
-import { toggleLike, toggleFavorite, isLiked, isFavorited } from '@/api/profile'
+import { toggleLike, toggleFavorite, isLiked, isFavorited, recordBrowse } from '@/api/profile'
 import { getComments, createComment, deleteComment, acceptComment } from '@/api/comment'
+import { getMyRole } from '@/api/board'
 
 const route = useRoute()
 const router = useRouter()
@@ -36,7 +37,11 @@ const isAuthor = computed(() => {
   return post.value.authorId === currentUser.value.id
 })
 
-const BASE_URL = 'http://localhost:8080'
+const isBoardManager = ref(false)
+
+const canManage = computed(() => isAuthor.value || isBoardManager.value)
+
+const BASE_URL = 'http://localhost:8081'
 
 const avatarUrl = computed(() => {
   // Post entity does not have avatar field; author info is limited to username
@@ -138,7 +143,8 @@ const handleDeleteComment = async (commentId) => {
 const handleAcceptComment = async (commentId) => {
   try {
     await acceptComment(commentId)
-    ElMessage.success('采纳成功')
+    ElMessage.success('采纳成功，积分已转移')
+    fetchPost()
     fetchComments()
   } catch (err) {
     ElMessage.error(err.message || '采纳失败')
@@ -197,9 +203,20 @@ const formatDate = (date) => {
   return d.toLocaleString()
 }
 
-onMounted(() => {
+onMounted(async () => {
   fetchPost()
   fetchComments()
+  recordBrowse(postId.value).catch(() => {})
+  // 检查吧管理权限
+  try {
+    const postData = await getPostDetail(postId.value)
+    const boardId = postData.data?.boardId
+    if (boardId) {
+      const roleRes = await getMyRole(boardId)
+      const role = roleRes.data?.role
+      isBoardManager.value = role === 'OWNER' || role === 'ADMIN'
+    }
+  } catch { isBoardManager.value = false }
 })
 </script>
 
@@ -220,7 +237,8 @@ onMounted(() => {
           <span v-if="post.isPinned" class="badge badge-pin">置顶</span>
           <span v-if="post.isGlobalPinned" class="badge badge-global">全局置顶</span>
           <span v-if="post.isFeatured" class="badge badge-featured">精华</span>
-          <span v-if="post.type === 'REWARD'" class="badge badge-reward">悬赏 {{ post.rewardPoints }} 积分</span>
+          <span v-if="post.type === 'REWARD' && post.rewardPoints > 0" class="badge badge-reward">悬赏 {{ post.rewardPoints }} 积分</span>
+          <span v-if="post.type === 'REWARD' && post.rewardPoints === 0" class="badge badge-resolved">悬赏已采纳</span>
         </div>
 
         <h1 class="post-title">{{ post.title }}</h1>
@@ -258,7 +276,7 @@ onMounted(() => {
               {{ post.commentCount || 0 }}
             </span>
           </div>
-          <div v-if="isAuthor" class="action-right">
+          <div v-if="canManage" class="action-right">
             <el-button type="primary" text @click="openEditDialog">编辑</el-button>
             <el-button type="danger" text @click="handleDelete">删除</el-button>
           </div>
@@ -307,7 +325,7 @@ onMounted(() => {
               </div>
               <div class="comment-body">{{ comment.content }}</div>
               <div class="comment-actions">
-                <template v-if="isAuthor && comment.isAccepted !== 1 && post.type === 'REWARD'">
+                <template v-if="isAuthor && comment.isAccepted !== 1 && post.type === 'REWARD' && post.rewardPoints > 0">
                   <el-button type="success" size="small" text @click="handleAcceptComment(comment.id)">采纳</el-button>
                 </template>
                 <template v-if="comment.authorId === currentUser.id || currentUser.globalRole === 'SYS_ADMIN'">
@@ -354,6 +372,7 @@ onMounted(() => {
 .badge-global { background: #fff3e6; color: #ff9900; }
 .badge-featured { background: #fff1e6; color: #ff6600; }
 .badge-reward { background: #e6fff0; color: #52c41a; }
+.badge-resolved { background: #f5f5f5; color: #909399; }
 
 .post-title {
   margin: 0 0 12px 0;

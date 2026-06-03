@@ -59,3 +59,14 @@ export const batchUpdateCommentStatus = (ids, status) => {
 export const getAdminLogs = (params) => {
   return request.get('/admin/logs', { params })
 }
+
+// ==================== 吧管理 ====================
+
+export const getBoards = (params) => request.get('/admin/boards', { params })
+
+export const updateBoardStatus = (boardId, status) =>
+  request.put(`/admin/boards/${boardId}/status`, null, { params: { status } })
+
+// ==================== 通知管理员 ====================
+
+export const getNotifyAdmin = () => request.get('/admin/notify-admin')

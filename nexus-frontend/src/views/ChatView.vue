@@ -60,27 +60,63 @@ const loadHistory = async (userId) => {
   }
 }
 
-const sendMessage = () => {
-  const text = inputText.value.trim()
-  if (!text || !activeUserId.value) return
+const sendMessage = (text) => {
+  const msgText = (typeof text === 'string' ? text : inputText.value).trim()
+  if (!msgText || !activeUserId.value) return
 
   const wsMessage = {
     receiverId: activeUserId.value,
-    content: text,
+    content: msgText,
   }
 
   if (window.chatWs && window.chatWs.readyState === WebSocket.OPEN) {
-    window.chatWs.send(JSON.stringify(wsMessage))
+    // 乐观更新：立刻在本地显示消息
+    const tempId = Date.now()
+    messages.value.push({
+      id: tempId,
+      senderId: currentUser.value.id,
+      receiverId: activeUserId.value,
+      content: msgText,
+      type: 1,
+      status: 0,
+      sendStatus: 'sending',
+      createTime: new Date().toISOString(),
+    })
     inputText.value = ''
+    nextTick(() => scrollToBottom())
+    loadChatList()
+    window.chatWs.send(JSON.stringify(wsMessage))
+
+    // 5秒超时：如果还没收到 ACK 就标记失败
+    setTimeout(() => {
+      const msg = messages.value.find(m => m.id === tempId)
+      if (msg && msg.sendStatus === 'sending') {
+        msg.sendStatus = 'failed'
+      }
+    }, 5000)
   } else {
     ElMessage({ type: 'warning', message: '连接已断开，正在尝试重连...' })
   }
 }
 
+const retryMessage = (msg) => {
+  // 重置状态并发起重发
+  messages.value = messages.value.filter(m => m.id !== msg.id)
+  sendMessage(msg.content)
+}
+
 const appendMessage = (msg) => {
   const relatedUserId = msg.senderId === currentUser.value.id ? msg.receiverId : msg.senderId
   if (activeUserId.value === relatedUserId || activeUserId.value === msg.senderId) {
-    messages.value.push(msg)
+    // 找到乐观更新的临时消息并替换为服务器版本
+    const optIdx = messages.value.findIndex(
+      m => m.id > 1000000000000 && m.senderId === msg.senderId && m.content === msg.content
+    )
+    if (optIdx >= 0) {
+      messages.value.splice(optIdx, 1, { ...msg, sendStatus: 'sent' })
+    } else {
+      messages.value.push(msg)
+    }
     nextTick(() => scrollToBottom())
   }
   loadChatList()
@@ -93,22 +129,26 @@ const scrollToBottom = () => {
 }
 
 onMounted(async () => {
-  await loadChatList()
-
-  // 注册 WebSocket 消息回调
+  // 先注册回调，防止错过 WebSocket 消息
   window.__onChatMessage = (msg) => {
     if (msg.type === 'new_message' || msg.type === 'message_sent') {
       appendMessage(msg.message)
-      loadChatList()
+    }
+    if (msg.type === 'chat_blocked') {
+      ElMessage.warning(msg.message || '请添加好友后继续私聊')
+      // 标记最新一条自己发送中的消息为失败
+      const failed = messages.value.findLast(m => m.senderId === currentUser.value.id && m.sendStatus === 'sending')
+      if (failed) failed.sendStatus = 'failed'
     }
   }
+
+  await loadChatList()
 
   const targetUserId = route.params.userId
   if (targetUserId) {
     activeUserId.value = Number(targetUserId)
     await loadHistory(Number(targetUserId))
     try { await markAsRead(Number(targetUserId)) } catch { /* ignore */ }
-    loadChatList()
   }
 })
 
@@ -142,6 +182,7 @@ watch(() => route.params.userId, (newVal) => {
             :key="msg.id"
             :message="msg"
             :is-mine="msg.senderId === currentUser.id"
+            @retry="retryMessage"
           />
           <div v-if="messages.length === 0 && !loading" class="chat-empty">暂无消息，发送第一条消息吧</div>
         </div>

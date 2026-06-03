@@ -1,14 +1,9 @@
 <script setup>
-defineProps({
-  message: {
-    type: Object,
-    required: true,
-  },
-  isMine: {
-    type: Boolean,
-    default: false,
-  },
+const props = defineProps({
+  message: { type: Object, required: true },
+  isMine: { type: Boolean, default: false },
 })
+const emit = defineEmits(['retry'])
 </script>
 
 <template>
@@ -17,8 +12,22 @@ defineProps({
       {{ isMine ? '我' : (message.senderId || '').toString().slice(-2) }}
     </div>
     <div class="chat-message__body">
-      <div class="chat-message__text">{{ message.content }}</div>
-      <div class="chat-message__time">{{ message.createTime || '' }}</div>
+      <div class="chat-message__content">
+        <div class="chat-message__text">{{ message.content }}</div>
+        <!-- 发送失败红感叹号 -->
+        <span
+          v-if="isMine && message.sendStatus === 'failed'"
+          class="chat-message__fail"
+          title="发送失败，点击重发"
+          @click="emit('retry', message)"
+        >❗</span>
+        <!-- 发送中指示 -->
+        <span v-if="isMine && message.sendStatus === 'sending'" class="chat-message__pending" title="发送中">⏳</span>
+      </div>
+      <div class="chat-message__time">
+        {{ message.createTime || '' }}
+        <span v-if="isMine && message.sendStatus === 'failed'" class="chat-message__fail-text">发送失败</span>
+      </div>
     </div>
   </div>
 </template>
@@ -67,6 +76,16 @@ defineProps({
   align-items: flex-end;
 }
 
+.chat-message__content {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chat-message--mine .chat-message__content {
+  flex-direction: row-reverse;
+}
+
 .chat-message__text {
   padding: 10px 14px;
   border-radius: 8px;
@@ -82,9 +101,30 @@ defineProps({
   color: #fff;
 }
 
+.chat-message__fail {
+  font-size: 18px;
+  cursor: pointer;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.chat-message__fail:hover {
+  transform: scale(1.2);
+}
+
+.chat-message__pending {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
 .chat-message__time {
   font-size: 11px;
   color: #909399;
   margin-top: 4px;
+}
+
+.chat-message__fail-text {
+  color: #f56c6c;
+  margin-left: 4px;
 }
 </style>

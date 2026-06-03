@@ -7,9 +7,11 @@ const route = useRoute()
 
 const activeMenu = computed(() => {
   if (route.path.startsWith('/admin/users')) return 'users'
+  if (route.path.startsWith('/admin/boards')) return 'boards'
   if (route.path.startsWith('/admin/posts')) return 'posts'
   if (route.path.startsWith('/admin/comments')) return 'comments'
   if (route.path.startsWith('/admin/logs')) return 'logs'
+  if (route.path.startsWith('/admin/notify')) return 'notify'
   return 'users'
 })
 
@@ -40,6 +42,9 @@ const goBack = () => {
         <el-menu-item index="users">
           <span>用户管理</span>
         </el-menu-item>
+        <el-menu-item index="boards">
+          <span>吧管理</span>
+        </el-menu-item>
         <el-menu-item index="posts">
           <span>帖子管理</span>
         </el-menu-item>
@@ -48,6 +53,9 @@ const goBack = () => {
         </el-menu-item>
         <el-menu-item index="logs">
           <span>操作日志</span>
+        </el-menu-item>
+        <el-menu-item index="notify">
+          <span>通知管理</span>
         </el-menu-item>
       </el-menu>
       <div class="sidebar-footer">

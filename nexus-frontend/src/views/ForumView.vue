@@ -19,7 +19,7 @@ const fetchBoards = async () => {
   loading.value = true
   try {
     const res = await getBoardList()
-    boards.value = res || []
+    boards.value = res.data || []
   } catch (error) {
     ElMessage({ type: 'error', message: error.message || '获取贴吧列表失败' })
   } finally {
@@ -97,10 +97,13 @@ onMounted(() => {
         @click="enterBoard(board)"
       >
         <div class="board-icon">
-          <svg t="Board" width="40" height="40" viewBox="0 0 24 24" fill="none">
-            <path d="M4 4h16v16H4V4z" stroke="currentColor" stroke-width="1.5"/>
-            <path d="M8 8h8M8 12h8M8 16h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-          </svg>
+          <el-avatar
+            :size="48"
+            shape="square"
+            :src="board.avatar ? 'http://localhost:8081' + board.avatar : ''"
+          >
+            {{ board.name?.charAt(0) }}
+          </el-avatar>
         </div>
         <div class="board-info">
           <h3 class="board-name">{{ board.name }}</h3>
@@ -206,15 +209,10 @@ onMounted(() => {
 }
 
 .board-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
-  flex-shrink: 0;
 }
 
 .board-info {

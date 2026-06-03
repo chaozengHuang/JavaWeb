@@ -19,6 +19,7 @@ public class UserBoardRelation {
     private Long userId;
     private Long boardId;
     private String boardRole;
+    private Integer activityPoints;
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime joinTime;

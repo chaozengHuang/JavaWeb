@@ -1,8 +1,13 @@
 package com.hcz.nexusbackend.handler;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hcz.nexusbackend.entity.FriendRelation;
+import com.hcz.nexusbackend.mapper.FriendRelationMapper;
+import com.hcz.nexusbackend.mapper.MessageMapper;
 import com.hcz.nexusbackend.service.MessageService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
@@ -21,6 +26,12 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     private final MessageService messageService;
+
+    @Autowired
+    private MessageMapper messageMapper;
+
+    @Autowired
+    private FriendRelationMapper friendRelationMapper;
 
     public ChatWebSocketHandler(MessageService messageService) {
         this.messageService = messageService;
@@ -43,6 +54,30 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         Map<String, Object> payload = objectMapper.readValue(textMessage.getPayload(), Map.class);
         Long receiverId = Long.valueOf(payload.get("receiverId").toString());
         String content = (String) payload.get("content");
+
+        // 检查是否为好友
+        Long friendCount = friendRelationMapper.selectCount(
+                new LambdaQueryWrapper<FriendRelation>()
+                        .eq(FriendRelation::getUserId, senderId)
+                        .eq(FriendRelation::getFriendId, receiverId)
+                        .eq(FriendRelation::getStatus, "ACCEPTED"));
+        boolean isFriend = friendCount > 0;
+
+        if (!isFriend) {
+            // 非好友限制：每人只能发1条
+            Long sentCount = messageMapper.selectCount(
+                    new LambdaQueryWrapper<com.hcz.nexusbackend.entity.Message>()
+                            .eq(com.hcz.nexusbackend.entity.Message::getSenderId, senderId)
+                            .eq(com.hcz.nexusbackend.entity.Message::getReceiverId, receiverId));
+            if (sentCount >= 1) {
+                // 拒绝发送
+                Map<String, Object> reject = new java.util.LinkedHashMap<>();
+                reject.put("type", "chat_blocked");
+                reject.put("message", "您只能向非好友发送一条消息，请添加好友后继续私聊");
+                sendMessage(session, objectMapper.writeValueAsString(reject));
+                return;
+            }
+        }
 
         // 保存消息到数据库
         var msg = messageService.send(senderId, receiverId, content);

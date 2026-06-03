@@ -10,16 +10,14 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
-@TableName("board")
-public class Board {
+@TableName("friend_relation")
+public class FriendRelation {
 
     @TableId(type = IdType.AUTO)
     private Long id;
 
-    private String name;
-    private String description;
-    private Long creatorId;
-    private String avatar;
+    private Long userId;
+    private Long friendId;
     private String status;
 
     @TableField(fill = FieldFill.INSERT)
@@ -27,4 +25,14 @@ public class Board {
 
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updatedAt;
+
+    // 非数据库字段 - 仅用于返回好友信息
+    @TableField(exist = false)
+    private String friendUsername;
+
+    @TableField(exist = false)
+    private String friendAvatar;
+
+    @TableField(exist = false)
+    private Boolean online;
 }

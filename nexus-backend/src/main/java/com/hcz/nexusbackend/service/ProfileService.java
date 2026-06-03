@@ -14,6 +14,8 @@ public interface ProfileService {
 
     User updateBio(String bio);
 
+    User updateProfile(Map<String, String> fields);
+
     String uploadAvatar(MultipartFile file);
 
     // 收藏
@@ -34,4 +36,8 @@ public interface ProfileService {
     void recordBrowse(Long postId);
 
     Map<String, Object> getHistory(Integer page, Integer size);
+
+    void deleteHistoryByPostId(Long postId);
+
+    void clearHistory();
 }

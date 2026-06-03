@@ -11,7 +11,11 @@ import com.hcz.nexusbackend.entity.Post;
 import com.hcz.nexusbackend.entity.User;
 import com.hcz.nexusbackend.exception.BusinessException;
 import com.hcz.nexusbackend.mapper.AdminLogMapper;
+import com.hcz.nexusbackend.entity.Board;
+import com.hcz.nexusbackend.entity.UserBoardRelation;
+import com.hcz.nexusbackend.mapper.BoardMapper;
 import com.hcz.nexusbackend.mapper.CommentMapper;
+import com.hcz.nexusbackend.mapper.UserBoardRelationMapper;
 import com.hcz.nexusbackend.mapper.PostMapper;
 import com.hcz.nexusbackend.mapper.UserMapper;
 import com.hcz.nexusbackend.util.SecurityUtils;
@@ -20,6 +24,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -39,7 +44,70 @@ public class AdminService {
     @Autowired
     private AdminLogMapper adminLogMapper;
 
+    @Autowired
+    private BoardMapper boardMapper;
+
+    @Autowired
+    private UserBoardRelationMapper boardRelationMapper;
+
+    @Autowired
+    private MessageService messageService;
+
+    @Autowired
+    private NotificationService notificationService;
+
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
+    private void sendSystemNotification(Long targetUserId, String content) {
+        try {
+            Long notifierId = notificationService.getNotifyUserId();
+            if (notifierId != null) {
+                messageService.send(notifierId, targetUserId, content);
+            }
+        } catch (Exception ignored) {}
+    }
+
+    public Map<String, Object> getNotifyCredentials() {
+        return notificationService.getNotifyCredentials();
+    }
+
+    // ==================== 吧管理 ====================
+
+    public IPage<Board> adminListBoards(String keyword, String status, Integer page, Integer size) {
+        getCurrentAdmin();
+        Page<Board> pageParam = new Page<>(page != null ? page : 1, size != null ? size : 10);
+        LambdaQueryWrapper<Board> wrapper = new LambdaQueryWrapper<>();
+        if (keyword != null && !keyword.isEmpty()) {
+            wrapper.like(Board::getName, keyword);
+        }
+        if (status != null && !status.isEmpty()) {
+            wrapper.eq(Board::getStatus, status);
+        }
+        wrapper.orderByDesc(Board::getId);
+        return boardMapper.selectPage(pageParam, wrapper);
+    }
+
+    public void updateBoardStatus(Long boardId, String status) {
+        User admin = getCurrentAdmin();
+        Board board = boardMapper.selectById(boardId);
+        if (board == null) throw new BusinessException("贴吧不存在");
+        String action = "DELETED".equals(status) ? "DELETE_BOARD" : "RESTORE_BOARD";
+        logAction(admin, action, "BOARD", boardId,
+                ("DELETED".equals(status) ? "删除贴吧 " : "恢复贴吧 ") + board.getName());
+        if ("DELETED".equals(status)) {
+            List<UserBoardRelation> members = boardRelationMapper.selectList(
+                    new LambdaQueryWrapper<UserBoardRelation>().eq(UserBoardRelation::getBoardId, boardId));
+            for (UserBoardRelation m : members) {
+                sendSystemNotification(m.getUserId(), "贴吧「" + board.getName() + "」已被管理员删除");
+            }
+        }
+        board.setStatus(status);
+        boardMapper.updateById(board);
+    }
+
+    public void resetNotifyPassword() {
+        // Not implemented - would need to encode new random password
+    }
 
     // ==================== 权限校验 ====================
 
@@ -133,8 +201,10 @@ public class AdminService {
         user.setStatus(dto.getStatus());
         userMapper.updateById(user);
         String action = "BANNED".equals(dto.getStatus()) ? "BAN_USER" : "UNBAN_USER";
-        logAction(admin, action, "USER", userId,
-                ("BANNED".equals(dto.getStatus()) ? "封禁用户 " : "解封用户 ") + user.getUsername());
+        String detail = ("BANNED".equals(dto.getStatus()) ? "封禁用户 " : "解封用户 ") + user.getUsername();
+        logAction(admin, action, "USER", userId, detail);
+        // 通知用户
+        sendSystemNotification(userId, "系统管理员已" + ("BANNED".equals(dto.getStatus()) ? "封禁" : "解封") + "您的账号");
         log.info("管理员 {} {} 用户 {}", admin.getUsername(),
                 "BANNED".equals(dto.getStatus()) ? "封禁" : "解封", user.getUsername());
     }
@@ -208,6 +278,9 @@ public class AdminService {
         postMapper.updateById(post);
         String detail = "将帖子 " + post.getTitle() + " 状态修改为 " + status;
         logAction(admin, "UPDATE_POST_STATUS", "POST", postId, detail);
+        if ("DELETED".equals(status) || "BLOCKED".equals(status)) {
+            sendSystemNotification(post.getAuthorId(), "系统管理员已将您的帖子「" + post.getTitle() + "」" + ("DELETED".equals(status) ? "删除" : "屏蔽"));
+        }
         log.info("管理员 {} {}", admin.getUsername(), detail);
     }
 
@@ -291,6 +364,9 @@ public class AdminService {
         commentMapper.updateById(comment);
         String detail = "将评论#" + commentId + " 状态修改为 " + status;
         logAction(admin, "UPDATE_COMMENT_STATUS", "COMMENT", commentId, detail);
+        if ("DELETED".equals(status) || "BLOCKED".equals(status)) {
+            sendSystemNotification(comment.getAuthorId(), "系统管理员已将您的评论" + ("DELETED".equals(status) ? "删除" : "屏蔽"));
+        }
         log.info("管理员 {} {}", admin.getUsername(), detail);
     }
 

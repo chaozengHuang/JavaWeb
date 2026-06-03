@@ -3,15 +3,17 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import {
-  getProfile, updateBio, uploadAvatar,
+  getProfile, updateBio, updateProfile, uploadAvatar,
   getFavorites, removeFavorite,
   getLikes, removeLike,
-  getHistory,
+  getHistory, deleteHistory, clearHistory,
 } from '@/api/profile'
 import { getUserInfoById, getPublicProfile } from '@/api/user'
+import { sendFriendRequest, isFriend, deleteFriend } from '@/api/friend'
+import { getMyBoards } from '@/api/board'
 import { getPostsByUser } from '@/api/post'
 
-const BASE_URL = 'http://localhost:8080'
+const BASE_URL = 'http://localhost:8081'
 
 const route = useRoute()
 const router = useRouter()
@@ -22,6 +24,9 @@ const profile = ref(null)
 const stats = ref({ favoriteCount: 0, likeCount: 0, postCount: 0 })
 const bioInput = ref('')
 const bioEditing = ref(false)
+const profileEditing = ref(false)
+const profileSaving = ref(false)
+const editForm = ref({ bio: '', phone: '', email: '', jobNature: '', location: '' })
 const avatarUploading = ref(false)
 
 const targetUserId = computed(() => route.params.userId)
@@ -36,6 +41,9 @@ const listData = ref([])
 const listTotal = ref(0)
 const listPage = ref(1)
 const listPageSize = ref(10)
+const friendStatus = ref(false)
+const friendLoading = ref(false)
+const myBoards = ref([])
 
 // ==================== 计算属性 ====================
 const currentUser = computed(() => {
@@ -97,10 +105,17 @@ const loadList = async (page = 1) => {
       res = await getPostsByUser(targetUserId.value, page, listPageSize.value)
     } else if (activeTab.value === 'myPosts') {
       res = await getPostsByUser(currentUser.value.id, page, listPageSize.value)
+    } else if (activeTab.value === 'myBoards') {
+      res = await getMyBoards()
     }
     if (res) {
-      listData.value = res.data?.records || []
-      listTotal.value = res.data?.total || 0
+      if (activeTab.value === 'myBoards') {
+        listData.value = res.data || []
+        listTotal.value = (res.data || []).length
+      } else {
+        listData.value = res.data?.records || []
+        listTotal.value = res.data?.total || 0
+      }
     }
   } catch (err) {
     ElMessage({ type: 'error', message: err.message || '加载失败' })
@@ -123,6 +138,35 @@ const handleSaveBio = async () => {
     ElMessage({ type: 'success', message: '简介已更新' })
   } catch (err) {
     ElMessage({ type: 'error', message: err.message || '保存失败' })
+  }
+}
+
+const startEditProfile = () => {
+  editForm.value = {
+    bio: profile.value?.bio || '',
+    phone: profile.value?.phone || '',
+    email: profile.value?.email || '',
+    jobNature: profile.value?.jobNature || '',
+    location: profile.value?.location || '',
+  }
+  profileEditing.value = true
+}
+
+const cancelEditProfile = () => {
+  profileEditing.value = false
+}
+
+const handleSaveProfile = async () => {
+  profileSaving.value = true
+  try {
+    const res = await updateProfile(editForm.value)
+    profile.value = res.data
+    profileEditing.value = false
+    ElMessage({ type: 'success', message: '资料已更新' })
+  } catch (err) {
+    ElMessage({ type: 'error', message: err.message || '保存失败' })
+  } finally {
+    profileSaving.value = false
   }
 }
 
@@ -196,14 +240,57 @@ const viewPost = (postId) => {
   router.push(`/post/${postId}`)
 }
 
+const handleDeleteHistory = async (postId) => {
+  try {
+    await deleteHistory(postId)
+    ElMessage({ type: 'success', message: '已删除浏览记录' })
+    loadList(listPage.value)
+  } catch (err) {
+    ElMessage({ type: 'error', message: err.message || '操作失败' })
+  }
+}
+
+const handleClearHistory = async () => {
+  try {
+    await clearHistory()
+    ElMessage({ type: 'success', message: '已清空浏览历史' })
+    loadList(1)
+  } catch (err) {
+    ElMessage({ type: 'error', message: err.message || '操作失败' })
+  }
+}
+
+const handleAddFriend = async () => {
+  if (!targetUserId.value) return
+  friendLoading.value = true
+  try {
+    await sendFriendRequest(Number(targetUserId.value))
+    ElMessage({ type: 'success', message: '好友请求已发送' })
+    friendStatus.value = 'pending'
+  } catch (err) {
+    ElMessage({ type: 'error', message: err.message || '操作失败' })
+  } finally {
+    friendLoading.value = false
+  }
+}
+
+const checkFriendStatus = async () => {
+  if (!isOtherUser.value || !targetUserId.value) return
+  try {
+    const res = await isFriend(Number(targetUserId.value))
+    friendStatus.value = res.data?.isFriend || false
+  } catch { friendStatus.value = false }
+}
+
 const formatTime = (time) => {
   if (!time) return ''
   return time.replace('T', ' ').substring(0, 19)
 }
 
 // ==================== 生命周期 ====================
-onMounted(() => {
+onMounted(async () => {
   loadProfile()
+  await checkFriendStatus()
   if (activeTab.value !== 'info') {
     loadList(1)
   }
@@ -220,6 +307,7 @@ onMounted(() => {
       <el-tab-pane v-if="!isOtherUser" label="我的帖子" name="myPosts" />
       <el-tab-pane v-if="isOtherUser" :label="profile?.username + '的帖子'" name="posts" />
       <el-tab-pane v-if="!isOtherUser" label="浏览历史" name="history" />
+      <el-tab-pane v-if="!isOtherUser" label="我的贴吧" name="myBoards" />
     </el-tabs>
 
     <!-- ==================== 基本信息 ==================== -->
@@ -247,9 +335,27 @@ onMounted(() => {
             <div class="info-row"><strong>用户名：</strong>{{ profile?.username || '-' }}</div>
             <div class="info-row"><strong>角色：</strong>{{ profile?.globalRole === 'SYS_ADMIN' ? '管理员' : '普通用户' }}</div>
             <div class="info-row"><strong>积分：</strong>{{ profile?.points ?? 0 }}</div>
+            <div class="info-row"><strong>位置：</strong>{{ profile?.location || '未设置' }}</div>
+            <div class="info-row"><strong>身份：</strong>{{ profile?.jobNature || '未设置' }}</div>
+          </el-card>
+          <!-- 联系方式卡片 -->
+          <el-card shadow="hover" class="info-card">
+            <div class="info-row"><strong>邮箱：</strong>{{ profile?.email || '未设置' }}</div>
+            <div class="info-row"><strong>电话：</strong>{{ profile?.phone || '未设置' }}</div>
           </el-card>
           <el-card v-if="isOtherUser" shadow="hover" class="info-card">
-            <el-button type="primary" @click="startConversation">发起对话</el-button>
+            <div style="display:flex;gap:8px;">
+              <el-button type="primary" @click="startConversation">发起对话</el-button>
+              <el-button
+                v-if="!friendStatus"
+                type="success"
+                :loading="friendLoading"
+                @click="handleAddFriend"
+              >
+                {{ friendStatus === 'pending' ? '已发送请求' : '添加好友' }}
+              </el-button>
+              <el-tag v-else type="success">已是好友</el-tag>
+            </div>
           </el-card>
           <el-card shadow="hover" class="info-card stats-card">
             <div class="stats-grid">
@@ -270,44 +376,92 @@ onMounted(() => {
         </div>
       </div>
 
-      <!-- 个人简介 -->
-      <el-card shadow="hover" class="bio-card">
+      <!-- 个人资料编辑 -->
+      <el-card v-if="!isOtherUser" shadow="hover" class="bio-card">
         <template #header>
           <div class="card-header">
-            <span>个人简介</span>
+            <span>个人资料</span>
             <el-button
-              v-if="!bioEditing && !isOtherUser"
+              v-if="!profileEditing"
               type="primary"
               size="small"
               text
-              @click="bioEditing = true"
+              @click="startEditProfile"
             >
               编辑
             </el-button>
           </div>
         </template>
-        <div v-if="bioEditing" class="bio-edit">
-          <el-input
-            v-model="bioInput"
-            type="textarea"
-            :rows="4"
-            maxlength="500"
-            show-word-limit
-            placeholder="写一段自我介绍..."
-          />
+        <div v-if="profileEditing" class="profile-edit-form">
+          <el-form label-width="80px" label-position="left">
+            <el-form-item label="个人简介">
+              <el-input v-model="editForm.bio" type="textarea" :rows="3" maxlength="500" show-word-limit placeholder="写一段自我介绍..." />
+            </el-form-item>
+            <el-form-item label="联系方式">
+              <el-input v-model="editForm.phone" placeholder="手机号码" />
+            </el-form-item>
+            <el-form-item label="电子邮箱">
+              <el-input v-model="editForm.email" placeholder="邮箱地址" />
+            </el-form-item>
+            <el-form-item label="工作身份">
+              <el-input v-model="editForm.jobNature" placeholder="如：学生/前端工程师/设计师" />
+            </el-form-item>
+            <el-form-item label="所在地区">
+              <el-input v-model="editForm.location" placeholder="如：北京/上海/广州" />
+            </el-form-item>
+          </el-form>
           <div class="bio-edit-actions">
-            <el-button @click="bioEditing = false; bioInput = profile?.bio || ''">取消</el-button>
-            <el-button type="primary" @click="handleSaveBio">保存</el-button>
+            <el-button @click="cancelEditProfile">取消</el-button>
+            <el-button type="primary" @click="handleSaveProfile" :loading="profileSaving">保存</el-button>
           </div>
         </div>
-        <div v-else class="bio-text">
-          {{ profile?.bio || '暂无简介，点击编辑添加' }}
+        <div v-else>
+          <div class="info-row"><strong>个人简介：</strong>{{ profile?.bio || '暂无简介，点击编辑添加' }}</div>
+          <div class="info-row"><strong>联系方式：</strong>{{ profile?.phone || '未设置' }}</div>
+          <div class="info-row"><strong>电子邮箱：</strong>{{ profile?.email || '未设置' }}</div>
+          <div class="info-row"><strong>工作身份：</strong>{{ profile?.jobNature || '未设置' }}</div>
+          <div class="info-row"><strong>所在地区：</strong>{{ profile?.location || '未设置' }}</div>
         </div>
+      </el-card>
+
+      <!-- 他人查看：只读资料 -->
+      <el-card v-if="isOtherUser" shadow="hover" class="bio-card">
+        <template #header><span>个人资料</span></template>
+        <div class="info-row"><strong>个人简介：</strong>{{ profile?.bio || '暂无' }}</div>
+        <div class="info-row"><strong>联系方式：</strong>{{ profile?.phone || '未设置' }}</div>
+        <div class="info-row"><strong>电子邮箱：</strong>{{ profile?.email || '未设置' }}</div>
+        <div class="info-row"><strong>工作身份：</strong>{{ profile?.jobNature || '未设置' }}</div>
+        <div class="info-row"><strong>所在地区：</strong>{{ profile?.location || '未设置' }}</div>
       </el-card>
     </div>
 
+    <!-- ==================== 我的贴吧 ==================== -->
+    <div v-if="activeTab === 'myBoards'" class="tab-content">
+      <div v-loading="loading" class="board-list">
+        <div v-if="listData.length === 0 && !loading" style="text-align:center;padding:40px;color:#909399;">你还未加入任何贴吧</div>
+        <el-card v-for="b in listData" :key="b.boardId" shadow="hover" class="myboard-card" @click="router.push('/forum/' + b.boardId)">
+          <div class="myboard-info">
+            <el-avatar :size="40" :src="b.boardAvatar ? 'http://localhost:8081' + b.boardAvatar : ''" shape="square">{{ b.boardName?.charAt(0) }}</el-avatar>
+            <div class="myboard-meta">
+              <div class="myboard-name">{{ b.boardName }}</div>
+              <div class="myboard-role">
+                <el-tag v-if="b.boardRole === 'OWNER'" size="small" type="danger">吧主</el-tag>
+                <el-tag v-else-if="b.boardRole === 'ADMIN'" size="small" type="warning">管理员</el-tag>
+                <el-tag v-else size="small" type="default">成员</el-tag>
+                <span style="margin-left:8px;font-size:12px;color:#909399;">活跃度：{{ b.activityPoints }}</span>
+              </div>
+            </div>
+          </div>
+        </el-card>
+      </div>
+    </div>
+
     <!-- ==================== 列表页（收藏 / 点赞 / 历史） ==================== -->
-    <div v-else class="tab-content">
+    <div v-else-if="activeTab !== 'info'" class="tab-content">
+      <!-- 浏览历史操作栏 -->
+      <div v-if="activeTab === 'history' && listData.length > 0" style="margin-bottom:12px;text-align:right;">
+        <el-button type="danger" size="small" @click="handleClearHistory">清空全部</el-button>
+      </div>
       <!-- 有数据 -->
       <template v-if="listData.length > 0">
         <div v-loading="loading" class="post-list">
@@ -315,9 +469,8 @@ onMounted(() => {
             v-for="item in listData"
             :key="item.id"
             shadow="hover"
-            class="post-card"
-            :class="{ 'clickable': activeTab === 'posts' || activeTab === 'myPosts' }"
-            @click="(activeTab === 'posts' || activeTab === 'myPosts') && viewPost(item.id)"
+            class="post-card clickable"
+            @click="viewPost(item.id)"
           >
             <div class="post-card-body">
               <div class="post-card-main">
@@ -333,7 +486,7 @@ onMounted(() => {
                   type="danger"
                   size="small"
                   text
-                  @click="handleRemoveFavorite(item.id)"
+                  @click.stop="handleRemoveFavorite(item.id)"
                 >
                   取消收藏
                 </el-button>
@@ -342,9 +495,18 @@ onMounted(() => {
                   type="danger"
                   size="small"
                   text
-                  @click="handleRemoveLike(item.id)"
+                  @click.stop="handleRemoveLike(item.id)"
                 >
                   取消点赞
+                </el-button>
+                <el-button
+                  v-if="activeTab === 'history'"
+                  type="danger"
+                  size="small"
+                  text
+                  @click.stop="handleDeleteHistory(item.id)"
+                >
+                  删除
                 </el-button>
               </div>
             </div>
@@ -526,5 +688,43 @@ onMounted(() => {
   display: flex;
   justify-content: center;
   padding: 24px 0;
+}
+
+/* ---- 我的贴吧 ---- */
+.board-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.myboard-card {
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.myboard-card:hover {
+  border-color: #409eff;
+}
+
+.myboard-info {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.myboard-meta {
+  flex: 1;
+}
+
+.myboard-name {
+  font-size: 15px;
+  font-weight: 500;
+  color: #303133;
+}
+
+.myboard-role {
+  display: flex;
+  align-items: center;
+  margin-top: 4px;
 }
 </style>

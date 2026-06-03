@@ -34,6 +34,7 @@ const router = createRouter({
       path: '/forum/:boardId',
       name: 'board',
       component: () => import('@/views/BoardView.vue'),
+      meta: { requiresAuth: true },
     },
     {
       path: '/profile',
@@ -65,6 +66,18 @@ const router = createRouter({
       component: () => import('@/views/ChatView.vue'),
       meta: { requiresAuth: true },
     },
+    {
+      path: '/points',
+      name: 'points',
+      component: () => import('@/views/PointsView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/friends',
+      name: 'friends',
+      component: () => import('@/views/FriendsView.vue'),
+      meta: { requiresAuth: true },
+    },
     // ==================== 管理员路由 ====================
     {
       path: '/admin',
@@ -88,6 +101,24 @@ const router = createRouter({
           path: 'comments',
           name: 'adminComments',
           component: () => import('@/views/admin/CommentManage.vue'),
+          meta: { requiresAuth: true, requiresAdmin: true },
+        },
+        {
+          path: 'logs',
+          name: 'adminLogs',
+          component: () => import('@/views/admin/LogManage.vue'),
+          meta: { requiresAuth: true, requiresAdmin: true },
+        },
+        {
+          path: 'boards',
+          name: 'adminBoards',
+          component: () => import('@/views/admin/BoardManage.vue'),
+          meta: { requiresAuth: true, requiresAdmin: true },
+        },
+        {
+          path: 'notify',
+          name: 'adminNotify',
+          component: () => import('@/views/admin/NotifyManage.vue'),
           meta: { requiresAuth: true, requiresAdmin: true },
         },
       ],

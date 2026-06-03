@@ -5,6 +5,8 @@ export const getProfile = () => request.get('/api/profile')
 
 export const updateBio = (bio) => request.put('/api/profile/bio', { bio })
 
+export const updateProfile = (fields) => request.put('/api/profile', fields)
+
 export const uploadAvatar = (file) => {
   const formData = new FormData()
   formData.append('file', file)
@@ -38,3 +40,7 @@ export const recordBrowse = (postId) => request.post(`/api/profile/history/${pos
 
 export const getHistory = (page = 1, size = 10) =>
   request.get('/api/profile/history', { params: { page, size } })
+
+export const deleteHistory = (postId) => request.delete(`/api/profile/history/${postId}`)
+
+export const clearHistory = () => request.delete('/api/profile/history')
