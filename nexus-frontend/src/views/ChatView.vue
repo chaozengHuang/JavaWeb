@@ -32,7 +32,7 @@ const loadChatList = async () => {
     const res = await getChatList()
     chats.value = res.data || []
   } catch {
-    // 静默失败
+    // ignore
   }
 }
 
@@ -41,22 +41,45 @@ const selectChat = async (userId) => {
   router.replace(`/chat/${userId}`)
   await loadChatList()
   await loadHistory(userId)
-  try {
-    await markAsRead(userId)
-  } catch { /* ignore */ }
+  try { await markAsRead(userId) } catch { /* ignore */ }
 }
+
+const failedMsgsKey = computed(() =>
+  `failed_msgs_${currentUser.value.id}_${activeUserId.value}`
+)
 
 const loadHistory = async (userId) => {
   loading.value = true
   try {
     const res = await getHistory(userId)
-    messages.value = res.data || []
+    const fromServer = (res.data || []).map(m => ({ ...m, sendStatus: 'sent' }))
+    // 加载本地失败消息（仅发送人可见）
+    const key = `failed_msgs_${currentUser.value.id}_${userId}`
+    const saved = localStorage.getItem(key)
+    const failedMsgs = saved ? JSON.parse(saved) : []
+    // 合并并按时间排序
+    messages.value = [...fromServer, ...failedMsgs].sort(
+      (a, b) => new Date(a.createTime || 0) - new Date(b.createTime || 0)
+    )
     await nextTick()
     scrollToBottom()
   } catch (error) {
     ElMessage({ type: 'error', message: error.message || '加载消息失败' })
   } finally {
     loading.value = false
+  }
+}
+
+const saveFailedMessages = () => {
+  if (!activeUserId.value) return
+  const key = `failed_msgs_${currentUser.value.id}_${activeUserId.value}`
+  const failed = messages.value.filter(
+    m => m.sendStatus === 'failed' && m.senderId === currentUser.value.id
+  )
+  if (failed.length > 0) {
+    localStorage.setItem(key, JSON.stringify(failed))
+  } else {
+    localStorage.removeItem(key)
   }
 }
 
@@ -70,53 +93,67 @@ const sendMessage = (text) => {
   }
 
   if (window.chatWs && window.chatWs.readyState === WebSocket.OPEN) {
-    // 乐观更新：立刻在本地显示消息
     const tempId = Date.now()
     messages.value.push({
       id: tempId,
       senderId: currentUser.value.id,
-      senderAvatar: currentUser.value.avatar,
       receiverId: activeUserId.value,
       content: msgText,
       type: 1,
       status: 0,
       sendStatus: 'sending',
-      createTime: new Date().toISOString().replace("T", " ").slice(0, 19),
+      createTime: new Date().toISOString().replace('T', ' ').slice(0, 19),
     })
     inputText.value = ''
     nextTick(() => scrollToBottom())
     loadChatList()
     window.chatWs.send(JSON.stringify(wsMessage))
 
-    // 5秒超时：如果还没收到 ACK 就标记失败
+    // 5秒超时标记失败
     setTimeout(() => {
       const msg = messages.value.find(m => m.id === tempId)
       if (msg && msg.sendStatus === 'sending') {
         msg.sendStatus = 'failed'
+        saveFailedMessages()
       }
     }, 5000)
   } else {
+    // WebSocket 断开，直接记录为失败
     ElMessage({ type: 'warning', message: '连接已断开，正在尝试重连...' })
+    const tempId = Date.now()
+    messages.value.push({
+      id: tempId,
+      senderId: currentUser.value.id,
+      receiverId: activeUserId.value,
+      content: msgText,
+      type: 1,
+      status: 0,
+      sendStatus: 'failed',
+      createTime: new Date().toISOString().replace('T', ' ').slice(0, 19),
+    })
+    nextTick(() => scrollToBottom())
+    saveFailedMessages()
   }
 }
 
 const retryMessage = (msg) => {
-  // 重置状态并发起重发
   messages.value = messages.value.filter(m => m.id !== msg.id)
+  saveFailedMessages()
   sendMessage(msg.content)
 }
 
 const appendMessage = (msg) => {
   const relatedUserId = msg.senderId === currentUser.value.id ? msg.receiverId : msg.senderId
   if (activeUserId.value === relatedUserId || activeUserId.value === msg.senderId) {
-    // 找到乐观更新的临时消息并替换为服务器版本
     const optIdx = messages.value.findIndex(
       m => m.id > 1000000000000 && m.senderId === msg.senderId && m.content === msg.content
     )
     if (optIdx >= 0) {
       messages.value.splice(optIdx, 1, { ...msg, sendStatus: 'sent' })
+      // 成功后清除对应的失败记录
+      saveFailedMessages()
     } else {
-      messages.value.push(msg)
+      messages.value.push({ ...msg, sendStatus: 'sent' })
     }
     nextTick(() => scrollToBottom())
   }
@@ -129,17 +166,22 @@ const scrollToBottom = () => {
   }
 }
 
+const getPeerAvatar = () => {
+  return chats.value.find(c => c.userId === activeUserId.value)?.avatar || null
+}
+
 onMounted(async () => {
-  // 先注册回调，防止错过 WebSocket 消息
   window.__onChatMessage = (msg) => {
     if (msg.type === 'new_message' || msg.type === 'message_sent') {
       appendMessage(msg.message)
     }
     if (msg.type === 'chat_blocked') {
       ElMessage.warning(msg.message || '请添加好友后继续私聊')
-      // 标记最新一条自己发送中的消息为失败
       const failed = messages.value.findLast(m => m.senderId === currentUser.value.id && m.sendStatus === 'sending')
-      if (failed) failed.sendStatus = 'failed'
+      if (failed) {
+        failed.sendStatus = 'failed'
+        saveFailedMessages()
+      }
     }
   }
 
@@ -184,7 +226,7 @@ watch(() => route.params.userId, (newVal) => {
             :message="msg"
             :is-mine="msg.senderId === currentUser.id"
             :my-avatar="currentUser.avatar"
-            :user-avatar="chats.find(c => c.userId === activeUserId)?.avatar"
+            :user-avatar="getPeerAvatar()"
             @retry="retryMessage"
           />
           <div v-if="messages.length === 0 && !loading" class="chat-empty">暂无消息，发送第一条消息吧</div>
@@ -215,57 +257,30 @@ watch(() => route.params.userId, (newVal) => {
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
 }
 
-.chat-sidebar {
-  width: 280px;
-  flex-shrink: 0;
-}
+.chat-sidebar { width: 280px; flex-shrink: 0; }
 
-.chat-main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
+.chat-main { flex: 1; display: flex; flex-direction: column; }
 
 .chat-placeholder {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #909399;
-  font-size: 16px;
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  color: #909399; font-size: 16px;
 }
 
 .chat-header {
-  padding: 16px 20px;
-  font-size: 16px;
-  font-weight: 600;
-  border-bottom: 1px solid #e4e7ed;
-  color: #303133;
+  padding: 16px 20px; font-size: 16px; font-weight: 600;
+  border-bottom: 1px solid #e4e7ed; color: #303133;
 }
 
 .chat-messages {
-  flex: 1;
-  padding: 20px;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
+  flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column;
 }
 
-.chat-empty {
-  margin: auto;
-  color: #909399;
-  font-size: 14px;
-}
+.chat-empty { margin: auto; color: #909399; font-size: 14px; }
 
 .chat-input-area {
-  padding: 12px 20px;
-  border-top: 1px solid #e4e7ed;
-  display: flex;
-  gap: 12px;
-  align-items: flex-end;
+  padding: 12px 20px; border-top: 1px solid #e4e7ed;
+  display: flex; gap: 12px; align-items: flex-end;
 }
 
-.chat-input-area :deep(.el-textarea__inner) {
-  resize: none;
-}
+.chat-input-area :deep(.el-textarea__inner) { resize: none; }
 </style>

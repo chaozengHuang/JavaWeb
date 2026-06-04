@@ -1,7 +1,10 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getComments, getCommentDetail, updateCommentStatus, batchUpdateCommentStatus } from '@/api/admin'
+
+const router = useRouter()
 
 // ==================== 列表状态 ====================
 const loading = ref(false)
@@ -79,7 +82,7 @@ const handleViewDetail = async (comment) => {
 
 // ==================== 状态操作 ====================
 const handleUpdateStatus = (comment, status) => {
-  const labels = { NORMAL: '恢复为正常', BLOCKED: '屏蔽', DELETED: '删除' }
+  const labels = { ACTIVE: '恢复为正常', BLOCKED: '屏蔽', DELETED: '删除' }
   const action = labels[status] || status
 
   ElMessageBox.confirm(
@@ -102,7 +105,7 @@ const handleBatchAction = (status) => {
     ElMessage({ type: 'warning', message: '请先选择评论' })
     return
   }
-  const labels = { NORMAL: '恢复', BLOCKED: '屏蔽', DELETED: '删除' }
+  const labels = { ACTIVE: '恢复', BLOCKED: '屏蔽', DELETED: '删除' }
   const action = labels[status] || status
 
   ElMessageBox.confirm(
@@ -128,12 +131,12 @@ const formatTime = (time) => {
 }
 
 const statusLabel = (status) => {
-  const map = { NORMAL: '正常', BLOCKED: '已屏蔽', DELETED: '已删除' }
+  const map = { ACTIVE: '正常', BLOCKED: '已屏蔽', DELETED: '已删除' }
   return map[status] || status || '正常'
 }
 
 const statusType = (status) => {
-  const map = { NORMAL: 'success', BLOCKED: 'warning', DELETED: 'danger' }
+  const map = { ACTIVE: 'success', BLOCKED: 'warning', DELETED: 'danger' }
   return map[status] || 'info'
 }
 
@@ -161,7 +164,7 @@ onMounted(() => {
         @keyup.enter="handleSearch"
       />
       <el-select v-model="filters.status" placeholder="状态筛选" clearable style="width: 140px">
-        <el-option label="正常" value="NORMAL" />
+        <el-option label="正常" value="ACTIVE" />
         <el-option label="已屏蔽" value="BLOCKED" />
         <el-option label="已删除" value="DELETED" />
       </el-select>
@@ -185,7 +188,7 @@ onMounted(() => {
     <div class="batch-bar" v-if="selectedIds.length > 0">
       <span>已选 {{ selectedIds.length }} 项</span>
       <el-button size="small" type="warning" @click="handleBatchAction('BLOCKED')">批量屏蔽</el-button>
-      <el-button size="small" type="success" @click="handleBatchAction('NORMAL')">批量恢复</el-button>
+      <el-button size="small" type="success" @click="handleBatchAction('ACTIVE')">批量恢复</el-button>
       <el-button size="small" type="danger" @click="handleBatchAction('DELETED')">批量删除</el-button>
     </div>
 
@@ -200,11 +203,12 @@ onMounted(() => {
     >
       <el-table-column type="selection" width="50" />
       <el-table-column prop="id" label="ID" width="70" />
-      <el-table-column prop="content" label="内容" min-width="240" show-overflow-tooltip>
+      <el-table-column prop="content" label="内容" min-width="200" show-overflow-tooltip>
         <template #default="{ row }">{{ truncateContent(row.content) }}</template>
       </el-table-column>
-      <el-table-column prop="authorName" label="作者" width="120" />
-      <el-table-column prop="postTitle" label="所属帖子" min-width="160" show-overflow-tooltip />
+      <el-table-column prop="boardName" label="所属吧" width="100" show-overflow-tooltip />
+      <el-table-column prop="authorName" label="作者" width="100" />
+      <el-table-column prop="postTitle" label="所属帖子" min-width="140" show-overflow-tooltip />
       <el-table-column label="状态" width="90">
         <template #default="{ row }">
           <el-tag :type="statusType(row.status)" size="small">
@@ -218,12 +222,13 @@ onMounted(() => {
       <el-table-column label="操作" width="280" fixed="right">
         <template #default="{ row }">
           <el-button type="primary" size="small" text @click="handleViewDetail(row)">详情</el-button>
+          <el-button size="small" text type="warning" @click="router.push('/post/' + row.postId)">跳转到帖</el-button>
           <el-button
-            v-if="row.status !== 'NORMAL'"
+            v-if="row.status !== 'ACTIVE'"
             type="success"
             size="small"
             text
-            @click="handleUpdateStatus(row, 'NORMAL')"
+            @click="handleUpdateStatus(row, 'ACTIVE')"
           >恢复</el-button>
           <el-button
             v-if="row.status !== 'BLOCKED'"

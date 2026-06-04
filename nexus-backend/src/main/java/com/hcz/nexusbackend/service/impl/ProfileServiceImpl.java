@@ -1,6 +1,7 @@
 package com.hcz.nexusbackend.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.hcz.nexusbackend.entity.Board;
 import com.hcz.nexusbackend.entity.BrowseHistory;
 import com.hcz.nexusbackend.entity.Post;
 import com.hcz.nexusbackend.entity.PostFavorite;
@@ -8,6 +9,7 @@ import com.hcz.nexusbackend.entity.PostLike;
 import com.hcz.nexusbackend.entity.User;
 import com.hcz.nexusbackend.entity.UserBoardRelation;
 import com.hcz.nexusbackend.exception.BusinessException;
+import com.hcz.nexusbackend.mapper.BoardMapper;
 import com.hcz.nexusbackend.mapper.BrowseHistoryMapper;
 import com.hcz.nexusbackend.mapper.PostFavoriteMapper;
 import com.hcz.nexusbackend.mapper.PostLikeMapper;
@@ -48,6 +50,9 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Autowired
     private UserBoardRelationMapper boardRelationMapper;
+
+    @Autowired
+    private BoardMapper boardMapper;
 
     @Value("${file.upload.dir:uploads}")
     private String uploadDir;
@@ -335,6 +340,16 @@ public class ProfileServiceImpl implements ProfileService {
                         .map(postMap::get)
                         .filter(Objects::nonNull)
                         .collect(Collectors.toList());
+            }
+        }
+
+        // 填充 boardName
+        for (Post p : posts) {
+            if (p.getBoardId() != null) {
+                Board b = boardMapper.selectById(p.getBoardId());
+                if (b != null) {
+                    p.setBoardName(b.getName());
+                }
             }
         }
 

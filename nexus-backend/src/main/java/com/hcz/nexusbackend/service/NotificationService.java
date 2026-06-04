@@ -31,8 +31,9 @@ public class NotificationService {
     public void init() {
         User existing = userMapper.selectOne(
                 new LambdaQueryWrapper<User>().eq(User::getUsername, NOTIFY_USERNAME));
+        // 每次启动都重新生成密码
+        plainPassword = UUID.randomUUID().toString().substring(0, 12);
         if (existing == null) {
-            plainPassword = UUID.randomUUID().toString().substring(0, 12);
             User notify = new User();
             notify.setUsername(NOTIFY_USERNAME);
             notify.setPassword(passwordEncoder.encode(plainPassword));
@@ -43,13 +44,13 @@ public class NotificationService {
             userMapper.insert(notify);
             log.info("通知管理员已创建: username={}, password={}", NOTIFY_USERNAME, plainPassword);
         } else {
-            // 升级旧账号
+            // 每次重启重置密码
+            existing.setPassword(passwordEncoder.encode(plainPassword));
             if (!NOTIFY_ROLE.equals(existing.getGlobalRole())) {
                 existing.setGlobalRole(NOTIFY_ROLE);
-                userMapper.updateById(existing);
             }
-            // 密码不可逆，如果 secret 为空则重置
-            plainPassword = "请联系开发者重置";
+            userMapper.updateById(existing);
+            log.info("通知管理员密码已重置: username={}, password={}", NOTIFY_USERNAME, plainPassword);
         }
     }
 

@@ -252,6 +252,8 @@ public class AdminService {
             map.put("updatedAt", post.getUpdatedAt());
             User author = userMapper.selectById(post.getAuthorId());
             map.put("authorName", author != null ? author.getUsername() : "未知");
+            Board board = boardMapper.selectById(post.getBoardId());
+            map.put("boardName", board != null ? board.getName() : "未知");
             return map;
         });
     }
@@ -267,8 +269,8 @@ public class AdminService {
 
     public void updatePostStatus(Long postId, String status) {
         User admin = getCurrentAdmin();
-        if (!"NORMAL".equals(status) && !"BLOCKED".equals(status) && !"DELETED".equals(status)) {
-            throw new BusinessException("状态值无效，仅支持 NORMAL、BLOCKED 或 DELETED");
+        if (!"ACTIVE".equals(status) && !"BLOCKED".equals(status) && !"DELETED".equals(status)) {
+            throw new BusinessException("状态值无效，仅支持 ACTIVE、BLOCKED 或 DELETED");
         }
         Post post = postMapper.selectById(postId);
         if (post == null) {
@@ -338,6 +340,11 @@ public class AdminService {
             map.put("authorName", author != null ? author.getUsername() : "未知");
             Post post = postMapper.selectById(comment.getPostId());
             map.put("postTitle", post != null ? post.getTitle() : "未知");
+            if (post != null) {
+                Board board = boardMapper.selectById(post.getBoardId());
+                map.put("boardId", post.getBoardId());
+                map.put("boardName", board != null ? board.getName() : "未知");
+            }
             return map;
         });
     }
@@ -353,8 +360,8 @@ public class AdminService {
 
     public void updateCommentStatus(Long commentId, String status) {
         User admin = getCurrentAdmin();
-        if (!"NORMAL".equals(status) && !"BLOCKED".equals(status) && !"DELETED".equals(status)) {
-            throw new BusinessException("状态值无效，仅支持 NORMAL、BLOCKED 或 DELETED");
+        if (!"ACTIVE".equals(status) && !"BLOCKED".equals(status) && !"DELETED".equals(status)) {
+            throw new BusinessException("状态值无效，仅支持 ACTIVE、BLOCKED 或 DELETED");
         }
         Comment comment = commentMapper.selectById(commentId);
         if (comment == null) {

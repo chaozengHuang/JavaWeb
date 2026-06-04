@@ -23,7 +23,15 @@ const descriptionInput = ref('')
 const descSaving = ref(false)
 const avatarUploading = ref(false)
 
-const isOwner = computed(() => props.currentUserRole === 'OWNER')
+const isSysAdmin = computed(() => {
+  const stored = localStorage.getItem('user')
+  if (stored) {
+    try { return JSON.parse(stored).user?.globalRole === 'SYS_ADMIN' } catch { return false }
+  }
+  return false
+})
+const isOwner = computed(() => props.currentUserRole === 'OWNER' || isSysAdmin.value)
+const isAdmin = computed(() => props.currentUserRole === 'ADMIN' || isOwner.value)
 
 // ==================== 回收站 ====================
 const trashPosts = ref([])

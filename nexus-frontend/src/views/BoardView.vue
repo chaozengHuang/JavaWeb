@@ -314,7 +314,7 @@ onMounted(() => {
         <div class="board-info-actions">
           <el-button v-if="!myBoardRole && !isSysAdmin" type="success" size="small" :loading="joinLoading" @click="handleJoin">加入贴吧</el-button>
           <el-button v-if="myBoardRole && !isOwner && !isSysAdmin" type="warning" size="small" @click="handleLeave">退出贴吧</el-button>
-          <el-button v-if="isOwner" type="primary" size="small" @click="openManageDialog">管理吧</el-button>
+          <el-button v-if="isManager" type="primary" size="small" @click="openManageDialog">管理吧</el-button>
           <el-button size="small" @click="fetchLeaderboard">🏆 活跃榜</el-button>
         </div>
       </div>
@@ -337,9 +337,11 @@ onMounted(() => {
         <span>帖子：{{ boardDetail.postCount }}</span>
         <span>成员：{{ boardDetail.memberCount }}</span>
         <span v-if="isSysAdmin" class="role-badge sysadmin">系统管理员</span>
-        <span v-if="myBoardRole === 'OWNER'" class="role-badge owner">吧主</span>
-        <span v-else-if="myBoardRole === 'ADMIN'" class="role-badge admin">管理员</span>
-        <span v-else-if="myBoardRole === 'MUTED'" class="role-badge muted">已禁言</span>
+        <template v-else>
+          <span v-if="myBoardRole === 'OWNER'" class="role-badge owner">吧主</span>
+          <span v-else-if="myBoardRole === 'ADMIN'" class="role-badge admin">管理员</span>
+          <span v-else-if="myBoardRole === 'MUTED'" class="role-badge muted">已禁言</span>
+        </template>
       </div>
     </div>
 

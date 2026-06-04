@@ -18,7 +18,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class CommentService {
@@ -34,6 +38,21 @@ public class CommentService {
 
     @Autowired
     private UserBoardRelationMapper relationMapper;
+
+    @Autowired
+    private NotificationService notificationService;
+
+    @Autowired
+    private MessageService messageService;
+
+    private void sendReplyNotify(Long senderId, Long receiverId, String content) {
+        try {
+            Long notifierId = notificationService.getNotifyUserId();
+            if (notifierId != null && !senderId.equals(receiverId)) {
+                messageService.send(notifierId, receiverId, "有人回复了您的评论：" + (content.length() > 30 ? content.substring(0, 30) + "..." : content));
+            }
+        } catch (Exception ignored) {}
+    }
 
     public Comment create(CommentCreateDTO dto) {
         Long userId = SecurityUtils.getUserId();
@@ -53,14 +72,35 @@ public class CommentService {
             }
         }
 
+        // 检查在该吧是否被禁言
+        if (post.getBoardId() != null) {
+            UserBoardRelation rel = relationMapper.selectOne(
+                    new LambdaQueryWrapper<UserBoardRelation>()
+                            .eq(UserBoardRelation::getUserId, userId)
+                            .eq(UserBoardRelation::getBoardId, post.getBoardId()));
+            if (rel != null && "MUTED".equals(rel.getBoardRole())) {
+                throw new BusinessException("您在该吧已被禁言，无法评论");
+            }
+        }
+
         Comment comment = new Comment();
         comment.setPostId(dto.getPostId());
         comment.setAuthorId(userId);
         comment.setContent(dto.getContent());
         comment.setParentCommentId(dto.getParentCommentId());
         comment.setIsAccepted(0);
-        comment.setStatus("NORMAL");
+        comment.setStatus("ACTIVE");
         commentMapper.insert(comment);
+        // 如果是楼中楼回复，通知被回复人；否则通知帖子作者
+        if (dto.getParentCommentId() != null) {
+            Comment parent = commentMapper.selectById(dto.getParentCommentId());
+            if (parent != null) {
+                sendReplyNotify(userId, parent.getAuthorId(), dto.getContent());
+            }
+        } else {
+            // 直接回复帖子：通知帖子作者
+            sendReplyNotify(userId, post.getAuthorId(), dto.getContent());
+        }
         // 评论+2活跃度
         Long boardId = post.getBoardId();
         if (boardId != null) {
@@ -79,19 +119,37 @@ public class CommentService {
     }
 
     public List<Comment> list(Long postId) {
-        List<Comment> comments = commentMapper.selectList(
+        List<Comment> all = commentMapper.selectList(
                 new LambdaQueryWrapper<Comment>()
                         .eq(Comment::getPostId, postId)
                         .ne(Comment::getStatus, "DELETED")
+                        .ne(Comment::getStatus, "BLOCKED")
                         .orderByAsc(Comment::getId));
-        // 填充评论作者用户名
-        for (Comment comment : comments) {
-            User author = userMapper.selectById(comment.getAuthorId());
-            if (author != null) {
-                comment.setAuthorUsername(author.getUsername());
+        // 填充作者名和父评论作者名
+        for (Comment c : all) {
+            User author = userMapper.selectById(c.getAuthorId());
+            if (author != null) c.setAuthorUsername(author.getUsername());
+            if (c.getParentCommentId() != null) {
+                Comment parent = all.stream().filter(p -> p.getId().equals(c.getParentCommentId())).findFirst().orElse(null);
+                if (parent != null && parent.getAuthorUsername() != null) {
+                    c.setParentAuthorUsername(parent.getAuthorUsername());
+                }
             }
         }
-        return comments;
+        // 构建树：父评论 + children
+        Map<Long, Comment> map = new java.util.LinkedHashMap<>();
+        for (Comment c : all) map.put(c.getId(), c);
+        for (Comment c : all) {
+            if (c.getParentCommentId() != null) {
+                Comment parent = map.get(c.getParentCommentId());
+                if (parent != null) {
+                    if (parent.getChildren() == null) parent.setChildren(new ArrayList<>());
+                    parent.getChildren().add(c);
+                }
+            }
+        }
+        // 只返回顶层评论
+        return all.stream().filter(c -> c.getParentCommentId() == null).collect(Collectors.toList());
     }
 
     public void delete(Long id) {

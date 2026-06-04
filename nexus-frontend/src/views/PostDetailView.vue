@@ -17,6 +17,7 @@ const commentLoading = ref(false)
 const comments = ref([])
 const commentInput = ref('')
 const commentSubmitting = ref(false)
+const replyTarget = ref(null)  // { id, username }
 const liked = ref(false)
 const favorited = ref(false)
 const editDialogVisible = ref(false)
@@ -114,9 +115,14 @@ const handleSubmitComment = async () => {
   if (!commentInput.value.trim()) return
   commentSubmitting.value = true
   try {
-    await createComment({ postId: Number(postId.value), content: commentInput.value })
-    ElMessage.success('评论成功')
+    const body = { postId: Number(postId.value), content: commentInput.value }
+    if (replyTarget.value) {
+      body.parentCommentId = replyTarget.value.id
+    }
+    await createComment(body)
+    ElMessage.success(replyTarget.value ? '回复成功' : '评论成功')
     commentInput.value = ''
+    replyTarget.value = null
     fetchComments()
     post.value.commentCount = (post.value.commentCount || 0) + 1
   } catch (err) {
@@ -124,6 +130,11 @@ const handleSubmitComment = async () => {
   } finally {
     commentSubmitting.value = false
   }
+}
+
+const startReply = (comment) => {
+  replyTarget.value = { id: comment.id, username: comment.authorUsername }
+  commentInput.value = ''
 }
 
 const handleDeleteComment = async (commentId) => {
@@ -303,36 +314,67 @@ onMounted(async () => {
           <h3 class="comments-title">评论 ({{ comments.length }})</h3>
 
           <div class="comment-input-area">
-            <el-input
-              v-model="commentInput"
-              type="textarea"
-              :rows="3"
-              placeholder="写下你的评论..."
-              resize="none"
-            />
-            <el-button type="primary" :loading="commentSubmitting" @click="handleSubmitComment">发表评论</el-button>
+            <div style="flex:1;">
+              <div v-if="replyTarget" class="reply-bar">
+                回复 <strong>@{{ replyTarget.username }}</strong>
+                <el-button type="danger" size="small" text @click="replyTarget = null">取消</el-button>
+              </div>
+              <el-input
+                v-model="commentInput"
+                type="textarea"
+                :rows="3"
+                :placeholder="replyTarget ? '回复 @' + replyTarget.username + '...' : '写下你的评论...'"
+                resize="none"
+              />
+            </div>
+            <el-button type="primary" :loading="commentSubmitting" @click="handleSubmitComment">
+              {{ replyTarget ? '回复' : '发表评论' }}
+            </el-button>
           </div>
 
           <div v-loading="commentLoading" class="comment-list">
             <div v-if="comments.length === 0" class="comment-empty">暂无评论，快来发表第一楼吧</div>
-            <div v-else class="comment-item" v-for="comment in comments" :key="comment.id">
-              <div class="comment-header">
-                <span class="comment-author" style="cursor:pointer;color:#409eff" @click="goToUserProfile(comment.authorId)">
-                  {{ comment.authorUsername || '匿名' }}
-                </span>
-                <span class="comment-time">{{ formatDate(comment.createdAt) }}</span>
-                <el-tag v-if="comment.isAccepted === 1" size="small" type="success">已采纳</el-tag>
+            <!-- 递归评论组件 -->
+            <template v-for="comment in comments" :key="comment.id">
+              <div class="comment-item">
+                <div class="comment-header">
+                  <span class="comment-author" style="cursor:pointer;color:#409eff" @click="goToUserProfile(comment.authorId)">
+                    {{ comment.authorUsername || '匿名' }}
+                  </span>
+                  <span class="comment-time">{{ formatDate(comment.createdAt) }}</span>
+                  <el-tag v-if="comment.isAccepted === 1" size="small" type="success">已采纳</el-tag>
+                </div>
+                <div class="comment-body">{{ comment.content }}</div>
+                <div class="comment-actions">
+                  <el-button size="small" text @click="startReply(comment)">回复</el-button>
+                  <template v-if="isAuthor && comment.isAccepted !== 1 && post.type === 'REWARD' && post.rewardPoints > 0">
+                    <el-button type="success" size="small" text @click="handleAcceptComment(comment.id)">采纳</el-button>
+                  </template>
+                  <template v-if="comment.authorId === currentUser.id || currentUser.globalRole === 'SYS_ADMIN'">
+                    <el-button type="danger" size="small" text @click="handleDeleteComment(comment.id)">删除</el-button>
+                  </template>
+                </div>
+                <!-- 楼中楼 -->
+                <div v-if="comment.children && comment.children.length" class="comment-replies">
+                  <div v-for="child in comment.children" :key="child.id" class="reply-item">
+                    <div class="comment-header">
+                      <span class="comment-author" style="cursor:pointer;color:#409eff" @click="goToUserProfile(child.authorId)">
+                        {{ child.authorUsername || '匿名' }}
+                      </span>
+                      <span v-if="child.parentAuthorUsername" style="font-size:12px;color:#909399;"> 回复 @{{ child.parentAuthorUsername }}</span>
+                      <span class="comment-time">{{ formatDate(child.createdAt) }}</span>
+                    </div>
+                    <div class="comment-body">{{ child.content }}</div>
+                    <div class="comment-actions">
+                      <el-button size="small" text @click="startReply(comment)">回复</el-button>
+                      <template v-if="child.authorId === currentUser.id || currentUser.globalRole === 'SYS_ADMIN'">
+                        <el-button type="danger" size="small" text @click="handleDeleteComment(child.id)">删除</el-button>
+                      </template>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div class="comment-body">{{ comment.content }}</div>
-              <div class="comment-actions">
-                <template v-if="isAuthor && comment.isAccepted !== 1 && post.type === 'REWARD' && post.rewardPoints > 0">
-                  <el-button type="success" size="small" text @click="handleAcceptComment(comment.id)">采纳</el-button>
-                </template>
-                <template v-if="comment.authorId === currentUser.id || currentUser.globalRole === 'SYS_ADMIN'">
-                  <el-button type="danger" size="small" text @click="handleDeleteComment(comment.id)">删除</el-button>
-                </template>
-              </div>
-            </div>
+            </template>
           </div>
         </div>
       </template>
@@ -493,5 +535,36 @@ onMounted(async () => {
 .comment-actions {
   display: flex;
   gap: 8px;
+}
+
+/* 回复提示条 */
+.reply-bar {
+  padding: 6px 10px;
+  background: #ecf5ff;
+  border-radius: 4px 4px 0 0;
+  font-size: 13px;
+  color: #409eff;
+  margin-bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* 楼中楼 */
+.comment-replies {
+  margin-top: 12px;
+  padding-left: 24px;
+  border-left: 3px solid #e4e7ed;
+}
+
+.reply-item {
+  padding: 12px;
+  background: #fff;
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+.reply-item:last-child {
+  margin-bottom: 0;
 }
 </style>

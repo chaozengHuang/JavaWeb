@@ -44,4 +44,7 @@ public class Post {
 
     @TableField(exist = false)
     private Integer commentCount;
+
+    @TableField(exist = false)
+    private String boardName;
 }

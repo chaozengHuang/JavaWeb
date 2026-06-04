@@ -8,6 +8,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @TableName("comment")
@@ -31,4 +32,10 @@ public class Comment {
 
     @TableField(exist = false)
     private String authorUsername;
+
+    @TableField(exist = false)
+    private String parentAuthorUsername;
+
+    @TableField(exist = false)
+    private List<Comment> children;
 }

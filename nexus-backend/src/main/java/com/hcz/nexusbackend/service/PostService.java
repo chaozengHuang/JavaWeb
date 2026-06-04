@@ -110,6 +110,7 @@ public class PostService {
         } else {
             wrapper.ne(Post::getStatus, "DELETED");
             wrapper.ne(Post::getStatus, "HIDDEN");
+            wrapper.ne(Post::getStatus, "BLOCKED");
         }
         if (type != null && !type.isEmpty()) {
             wrapper.eq(Post::getType, type);
@@ -141,7 +142,7 @@ public class PostService {
         if (post == null || "DELETED".equals(post.getStatus())) {
             throw new BusinessException("帖子不存在");
         }
-        if ("HIDDEN".equals(post.getStatus())) {
+        if ("HIDDEN".equals(post.getStatus()) || "BLOCKED".equals(post.getStatus())) {
             throw new BusinessException("帖子已被隐藏");
         }
         // 填充作者用户名
@@ -164,6 +165,8 @@ public class PostService {
         LambdaQueryWrapper<Post> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Post::getAuthorId, userId)
                .ne(Post::getStatus, "DELETED")
+               .ne(Post::getStatus, "HIDDEN")
+               .ne(Post::getStatus, "BLOCKED")
                .orderByDesc(Post::getId);
         IPage<Post> pageResult = postMapper.selectPage(pageParam, wrapper);
         // 填充作者用户名和统计数量

@@ -139,8 +139,9 @@ public class BoardService {
 
         // 当前用户角色
         String currentUserRole = null;
-        try {
-            Long userId = getCurrentUserId();
+        String currentUserGlobalRole = null;
+        Long userId = SecurityUtils.getUserId();
+        if (userId != null) {
             UserBoardRelation self = relationMapper.selectOne(
                     new LambdaQueryWrapper<UserBoardRelation>()
                             .eq(UserBoardRelation::getUserId, userId)
@@ -148,8 +149,15 @@ public class BoardService {
             if (self != null) {
                 currentUserRole = self.getBoardRole();
             }
-        } catch (Exception ignored) {
-            // 未登录
+            User cu = userMapper.selectById(userId);
+            if (cu != null) {
+                currentUserGlobalRole = cu.getGlobalRole();
+                // 系统管理员不冒充吧主，前端单独处理
+            }
+            // 如果用户是该吧的创建者但不存在关系记录，视为 OWNER
+            if (userId.equals(board.getCreatorId()) && currentUserRole == null && !"SYS_ADMIN".equals(currentUserGlobalRole)) {
+                currentUserRole = "OWNER";
+            }
         }
 
         Map<String, Object> result = new LinkedHashMap<>();
@@ -489,19 +497,15 @@ public class BoardService {
         int pageNum = page != null ? page : 1;
         int pageSize = size != null ? size : 20;
 
-        LambdaQueryWrapper<UserBoardRelation> wrapper = new LambdaQueryWrapper<UserBoardRelation>()
-                .eq(UserBoardRelation::getBoardId, boardId)
-                .orderByAsc(UserBoardRelation::getBoardRole)
-                .orderByDesc(UserBoardRelation::getJoinTime);
+        // 先收集该吧所有用户的ID
+        List<UserBoardRelation> allRels = relationMapper.selectList(
+                new LambdaQueryWrapper<UserBoardRelation>()
+                        .eq(UserBoardRelation::getBoardId, boardId));
 
-        Page<UserBoardRelation> pageParam = new Page<>(pageNum, pageSize);
-        Page<UserBoardRelation> result = relationMapper.selectPage(pageParam, wrapper);
-
-        List<Map<String, Object>> members = new ArrayList<>();
-        for (UserBoardRelation rel : result.getRecords()) {
+        List<Map<String, Object>> filtered = new ArrayList<>();
+        for (UserBoardRelation rel : allRels) {
             User u = userMapper.selectById(rel.getUserId());
             if (u == null) continue;
-            // keyword 过滤
             if (keyword != null && !keyword.isEmpty()
                     && !u.getUsername().contains(keyword)) {
                 continue;
@@ -513,15 +517,21 @@ public class BoardService {
             item.put("boardRole", rel.getBoardRole());
             item.put("activityPoints", rel.getActivityPoints() != null ? rel.getActivityPoints() : 0);
             item.put("joinTime", rel.getJoinTime());
-            members.add(item);
+            filtered.add(item);
         }
 
-        Map<String, Object> data = new LinkedHashMap<>();
-        data.put("records", members);
-        data.put("total", result.getTotal());
-        data.put("page", pageNum);
-        data.put("size", pageSize);
-        return data;
+        // 手动分页
+        int total = filtered.size();
+        int fromIndex = Math.min((pageNum - 1) * pageSize, total);
+        int toIndex = Math.min(fromIndex + pageSize, total);
+        List<Map<String, Object>> pageData = filtered.subList(fromIndex, toIndex);
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("records", pageData);
+        result.put("total", total);
+        result.put("page", pageNum);
+        result.put("size", pageSize);
+        return result;
     }
 
     public Map<String, Object> getUserBoardRole(Long boardId) {
@@ -542,7 +552,7 @@ public class BoardService {
         List<Post> posts = postMapper.selectList(
                 new LambdaQueryWrapper<Post>()
                         .eq(Post::getBoardId, boardId)
-                        .and(w -> w.eq(Post::getStatus, "HIDDEN").or().eq(Post::getStatus, "DELETED"))
+                        .and(w -> w.eq(Post::getStatus, "HIDDEN").or().eq(Post::getStatus, "DELETED").or().eq(Post::getStatus, "BLOCKED"))
                         .orderByDesc(Post::getUpdatedAt));
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("records", posts);
@@ -585,7 +595,7 @@ public class BoardService {
         if (comment == null) throw new BusinessException("评论不存在");
         Comment update = new Comment();
         update.setId(commentId);
-        update.setStatus("NORMAL");
+        update.setStatus("ACTIVE");
         commentMapper.updateById(update);
     }
 
@@ -602,7 +612,7 @@ public class BoardService {
         List<Comment> deleted = commentMapper.selectList(
                 new LambdaQueryWrapper<Comment>()
                         .in(Comment::getPostId, postIds)
-                        .eq(Comment::getStatus, "DELETED")
+                        .and(w -> w.eq(Comment::getStatus, "DELETED").or().eq(Comment::getStatus, "BLOCKED"))
                         .orderByDesc(Comment::getUpdatedAt));
 
         List<Map<String, Object>> list = new ArrayList<>();

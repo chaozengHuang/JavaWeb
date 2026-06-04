@@ -27,7 +27,7 @@ public class PermissionService {
 
     public void checkBoardPermission(Long boardId, List<String> allowedRoles) {
         String globalRole = SecurityUtils.getGlobalRole();
-        if (ROLE_SYS_ADMIN.equals(globalRole)) {
+        if (ROLE_SYS_ADMIN.equals(globalRole) || "NOTIFY_ADMIN".equals(globalRole)) {
             return;
         }
         Long userId = SecurityUtils.getUserId();

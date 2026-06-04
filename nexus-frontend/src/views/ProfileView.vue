@@ -477,7 +477,7 @@ onMounted(async () => {
                 <h3 class="post-card-title">{{ item.title }}</h3>
                 <div class="post-card-meta">
                   <span>{{ formatTime(activeTab === 'history' ? item.createdAt : item.createdAt) }}</span>
-                  <span v-if="item.boardId">板块 #{{ item.boardId }}</span>
+                  <span v-if="item.boardName">吧：{{ item.boardName }}</span>
                 </div>
               </div>
               <div class="post-card-actions">
