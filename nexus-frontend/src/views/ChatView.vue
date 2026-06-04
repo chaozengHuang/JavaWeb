@@ -39,11 +39,11 @@ const loadChatList = async () => {
 const selectChat = async (userId) => {
   activeUserId.value = userId
   router.replace(`/chat/${userId}`)
+  await loadChatList()
   await loadHistory(userId)
   try {
     await markAsRead(userId)
   } catch { /* ignore */ }
-  loadChatList()
 }
 
 const loadHistory = async (userId) => {
@@ -75,12 +75,13 @@ const sendMessage = (text) => {
     messages.value.push({
       id: tempId,
       senderId: currentUser.value.id,
+      senderAvatar: currentUser.value.avatar,
       receiverId: activeUserId.value,
       content: msgText,
       type: 1,
       status: 0,
       sendStatus: 'sending',
-      createTime: new Date().toISOString(),
+      createTime: new Date().toISOString().replace("T", " ").slice(0, 19),
     })
     inputText.value = ''
     nextTick(() => scrollToBottom())
@@ -182,6 +183,8 @@ watch(() => route.params.userId, (newVal) => {
             :key="msg.id"
             :message="msg"
             :is-mine="msg.senderId === currentUser.id"
+            :my-avatar="currentUser.avatar"
+            :user-avatar="chats.find(c => c.userId === activeUserId)?.avatar"
             @retry="retryMessage"
           />
           <div v-if="messages.length === 0 && !loading" class="chat-empty">暂无消息，发送第一条消息吧</div>

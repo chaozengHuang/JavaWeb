@@ -1,14 +1,21 @@
 <script setup>
+import { useRouter } from 'vue-router'
+
 const props = defineProps({
   message: { type: Object, required: true },
   isMine: { type: Boolean, default: false },
+  myAvatar: { type: String, default: null },
+  userAvatar: { type: String, default: null },
 })
 const emit = defineEmits(['retry'])
+const router = useRouter()
 </script>
 
 <template>
   <div :class="['chat-message', isMine ? 'chat-message--mine' : 'chat-message--other']">
-    <div class="chat-message__avatar">
+    <img v-if="isMine && props.myAvatar" :src="'http://localhost:8081' + props.myAvatar" class="chat-message__avatar clickable" @click="router.push('/profile')" />
+    <img v-else-if="!isMine && props.userAvatar" :src="'http://localhost:8081' + props.userAvatar" class="chat-message__avatar clickable" @click="router.push('/user/' + message.senderId)" />
+    <div v-else class="chat-message__avatar clickable" @click="router.push('/user/' + message.senderId)">
       {{ isMine ? '我' : (message.senderId || '').toString().slice(-2) }}
     </div>
     <div class="chat-message__body">
@@ -61,6 +68,11 @@ const emit = defineEmits(['retry'])
   justify-content: center;
   font-size: 12px;
   flex-shrink: 0;
+  object-fit: cover;
+}
+
+.clickable {
+  cursor: pointer;
 }
 
 .chat-message--other .chat-message__avatar {

@@ -40,9 +40,22 @@ public class MessageService {
         return msg;
     }
 
-    public List<Message> getHistory(Long otherUserId) {
+    public List<Map<String, Object>> getHistory(Long otherUserId) {
         Long currentUserId = getCurrentUserId();
-        return messageMapper.selectHistory(currentUserId, otherUserId);
+        List<Message> messages = messageMapper.selectHistory(currentUserId, otherUserId);
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Message msg : messages) {
+            Map<String, Object> map = new LinkedHashMap<>();
+            map.put("id", msg.getId());
+            map.put("senderId", msg.getSenderId());
+            map.put("receiverId", msg.getReceiverId());
+            map.put("content", msg.getContent());
+            map.put("type", msg.getType());
+            map.put("status", msg.getStatus());
+            map.put("createTime", msg.getCreateTime().toString().replace("T", " "));
+            result.add(map);
+        }
+        return result;
     }
 
     public void markAsRead(Long senderId) {
@@ -72,6 +85,7 @@ public class MessageService {
             Map<String, Object> item = new HashMap<>();
             item.put("userId", other.getId());
             item.put("username", other.getUsername());
+            item.put("avatar", other.getAvatar());
             item.put("unread", messageMapper.countUnreadBySender(currentUserId, otherId));
             chatList.add(item);
         }
