@@ -2,6 +2,7 @@ package com.hcz.nexusbackend.handler;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.hcz.nexusbackend.entity.FriendRelation;
 import com.hcz.nexusbackend.mapper.FriendRelationMapper;
 import com.hcz.nexusbackend.mapper.MessageMapper;
@@ -23,7 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     private static final Map<Long, WebSocketSession> ONLINE_USERS = new ConcurrentHashMap<>();
-    private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
 
     private final MessageService messageService;
 
