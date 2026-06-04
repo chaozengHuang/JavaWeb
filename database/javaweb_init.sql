@@ -34,7 +34,7 @@ CREATE TABLE `admin_log` (
   PRIMARY KEY (`id`),
   KEY `idx_admin_id` (`admin_id`),
   KEY `idx_created_at` (`created_at`)
-) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='管理员操作日志表';
+) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='管理员操作日志表';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -43,7 +43,7 @@ CREATE TABLE `admin_log` (
 
 LOCK TABLES `admin_log` WRITE;
 /*!40000 ALTER TABLE `admin_log` DISABLE KEYS */;
-INSERT INTO `admin_log` VALUES (1,1,'fx','RESET_PASSWORD','USER',1,'重置用户 fx 的密码','2026-05-27 16:24:04'),(2,1,'fx','BAN_USER','USER',3,'封禁用户 扫福瑞','2026-05-27 16:26:48'),(3,1,'fx','UNBAN_USER','USER',3,'解封用户 扫福瑞','2026-05-27 16:32:21'),(4,1,'fx','BAN_USER','USER',3,'封禁用户 扫福瑞','2026-05-27 16:32:23'),(5,1,'fx','BAN_USER','USER',4,'封禁用户 testban','2026-05-27 16:43:47'),(6,1,'fx','UNBAN_USER','USER',4,'解封用户 testban','2026-05-27 19:51:50'),(7,1,'fx','UPDATE_POST_STATUS','POST',1,'将帖子 这是一个帖子 状态修改为 DELETED','2026-06-01 10:33:01'),(8,1,'fx','UPDATE_POST_STATUS','POST',1,'将帖子 这是一个帖子 状态修改为 NORMAL','2026-06-01 10:33:07'),(9,1,'fx','UPDATE_POST_STATUS','POST',1,'将帖子 这是一个帖子 状态修改为 BLOCKED','2026-06-01 10:33:09'),(10,1,'fx','UPDATE_POST_STATUS','POST',1,'将帖子 这是一个帖子 状态修改为 NORMAL','2026-06-01 10:33:11'),(11,1,'fx','UPDATE_POST_STATUS','POST',1,'将帖子 这是一个帖子 状态修改为 BLOCKED','2026-06-01 10:33:16'),(12,1,'fx','UPDATE_POST_STATUS','POST',1,'将帖子 这是一个帖子 状态修改为 DELETED','2026-06-01 10:33:32'),(13,1,'fx','UPDATE_POST_STATUS','POST',1,'将帖子 这是一个帖子 状态修改为 NORMAL','2026-06-01 10:33:43'),(14,1,'fx','RESET_PASSWORD','USER',3,'重置用户 扫福瑞 的密码','2026-06-03 14:47:00'),(15,1,'fx','UNBAN_USER','USER',3,'解封用户 扫福瑞','2026-06-03 14:47:35'),(16,1,'fx','RESTORE_BOARD','BOARD',4,'恢复贴吧 孙吧','2026-06-03 18:23:07');
+INSERT INTO `admin_log` VALUES (1,1,'fx','RESET_PASSWORD','USER',1,'重置用户 fx 的密码','2026-05-27 16:24:04'),(2,1,'fx','BAN_USER','USER',3,'封禁用户 扫福瑞','2026-05-27 16:26:48'),(3,1,'fx','UNBAN_USER','USER',3,'解封用户 扫福瑞','2026-05-27 16:32:21'),(4,1,'fx','BAN_USER','USER',3,'封禁用户 扫福瑞','2026-05-27 16:32:23'),(5,1,'fx','BAN_USER','USER',4,'封禁用户 testban','2026-05-27 16:43:47'),(6,1,'fx','UNBAN_USER','USER',4,'解封用户 testban','2026-05-27 19:51:50'),(7,1,'fx','UPDATE_POST_STATUS','POST',1,'将帖子 这是一个帖子 状态修改为 DELETED','2026-06-01 10:33:01'),(8,1,'fx','UPDATE_POST_STATUS','POST',1,'将帖子 这是一个帖子 状态修改为 NORMAL','2026-06-01 10:33:07'),(9,1,'fx','UPDATE_POST_STATUS','POST',1,'将帖子 这是一个帖子 状态修改为 BLOCKED','2026-06-01 10:33:09'),(10,1,'fx','UPDATE_POST_STATUS','POST',1,'将帖子 这是一个帖子 状态修改为 NORMAL','2026-06-01 10:33:11'),(11,1,'fx','UPDATE_POST_STATUS','POST',1,'将帖子 这是一个帖子 状态修改为 BLOCKED','2026-06-01 10:33:16'),(12,1,'fx','UPDATE_POST_STATUS','POST',1,'将帖子 这是一个帖子 状态修改为 DELETED','2026-06-01 10:33:32'),(13,1,'fx','UPDATE_POST_STATUS','POST',1,'将帖子 这是一个帖子 状态修改为 NORMAL','2026-06-01 10:33:43'),(14,1,'fx','RESET_PASSWORD','USER',3,'重置用户 扫福瑞 的密码','2026-06-03 14:47:00'),(15,1,'fx','UNBAN_USER','USER',3,'解封用户 扫福瑞','2026-06-03 14:47:35'),(16,1,'fx','RESTORE_BOARD','BOARD',4,'恢复贴吧 孙吧','2026-06-03 18:23:07'),(17,1,'fx','RESTORE_BOARD','BOARD',4,'恢复贴吧 孙吧','2026-06-04 19:41:49'),(18,2,'admin','UPDATE_POST_STATUS','POST',14,'将帖子 测试系统管理员后台屏蔽 状态修改为 BLOCKED','2026-06-04 21:28:06'),(19,2,'admin','UPDATE_COMMENT_STATUS','COMMENT',19,'将评论#19 状态修改为 BLOCKED','2026-06-04 21:41:03'),(20,2,'admin','UPDATE_POST_STATUS','POST',14,'将帖子 测试系统管理员后台屏蔽 状态修改为 ACTIVE','2026-06-04 21:46:56');
 /*!40000 ALTER TABLE `admin_log` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -65,7 +65,7 @@ CREATE TABLE `board` (
   `avatar` varchar(500) DEFAULT NULL COMMENT '吧头像URL',
   PRIMARY KEY (`id`),
   KEY `idx_creator` (`creator_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='板块表';
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='板块表';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -74,7 +74,7 @@ CREATE TABLE `board` (
 
 LOCK TABLES `board` WRITE;
 /*!40000 ALTER TABLE `board` DISABLE KEYS */;
-INSERT INTO `board` VALUES (1,'这是一个吧','',1,'ACTIVE','2026-06-01 10:29:34','2026-06-01 10:29:34',NULL),(2,'孙笑川吧','',5,'ACTIVE','2026-06-03 13:35:21','2026-06-03 13:35:21',NULL),(3,'测试吧是否可以管理调整','测试',6,'ACTIVE','2026-06-03 13:43:17','2026-06-03 13:43:17',NULL),(4,'孙吧','',6,'ACTIVE','2026-06-03 14:15:36','2026-06-03 18:15:26',NULL),(5,'测试吧的信息维护','测试',5,'ACTIVE','2026-06-03 15:16:27','2026-06-03 16:23:17','/uploads/avatars/board_5_54caf073.jpg');
+INSERT INTO `board` VALUES (1,'这是一个吧','',1,'ACTIVE','2026-06-01 10:29:34','2026-06-01 10:29:34',NULL),(2,'孙笑川吧','',5,'ACTIVE','2026-06-03 13:35:21','2026-06-03 13:35:21',NULL),(3,'测试吧是否可以管理调整','测试',6,'ACTIVE','2026-06-03 13:43:17','2026-06-03 13:43:17',NULL),(4,'孙吧','',6,'ACTIVE','2026-06-03 14:15:36','2026-06-04 20:24:40','/uploads/avatars/board_4_32ae2ec2.jpg'),(5,'测试吧的信息维护','这是一个测试吧描述的测试',5,'ACTIVE','2026-06-03 15:16:27','2026-06-04 20:22:33','/uploads/avatars/board_5_54caf073.jpg'),(6,'南昌大学吧','',8,'ACTIVE','2026-06-04 20:36:36','2026-06-04 20:36:36',NULL);
 /*!40000 ALTER TABLE `board` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -93,7 +93,7 @@ CREATE TABLE `browse_history` (
   PRIMARY KEY (`id`),
   KEY `idx_history_user` (`user_id`,`browse_time` DESC),
   KEY `idx_history_post` (`post_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=35 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='浏览历史表';
+) ENGINE=InnoDB AUTO_INCREMENT=54 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='浏览历史表';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -102,7 +102,7 @@ CREATE TABLE `browse_history` (
 
 LOCK TABLES `browse_history` WRITE;
 /*!40000 ALTER TABLE `browse_history` DISABLE KEYS */;
-INSERT INTO `browse_history` VALUES (1,5,1,'2026-06-03 14:28:41'),(2,5,1,'2026-06-03 14:28:45'),(3,5,2,'2026-06-03 14:32:24'),(4,6,3,'2026-06-03 14:34:49'),(5,6,2,'2026-06-03 14:35:04'),(6,5,5,'2026-06-03 14:43:57'),(7,6,5,'2026-06-03 14:44:50'),(8,1,5,'2026-06-03 14:45:31'),(9,1,5,'2026-06-03 14:47:43'),(10,1,5,'2026-06-03 14:53:23'),(11,5,5,'2026-06-03 14:53:45'),(12,5,5,'2026-06-03 14:53:51'),(13,5,5,'2026-06-03 14:54:04'),(14,5,5,'2026-06-03 14:54:10'),(15,5,5,'2026-06-03 14:56:06'),(16,5,6,'2026-06-03 14:56:31'),(17,5,6,'2026-06-03 14:56:42'),(18,6,7,'2026-06-03 15:22:26'),(19,5,7,'2026-06-03 15:22:49'),(20,5,8,'2026-06-03 16:13:12'),(21,6,9,'2026-06-03 16:14:57'),(22,6,8,'2026-06-03 16:21:43'),(23,6,8,'2026-06-03 16:21:48'),(24,6,9,'2026-06-03 16:24:16'),(25,6,8,'2026-06-03 16:24:19'),(26,6,8,'2026-06-03 16:28:46'),(27,5,9,'2026-06-03 16:35:42'),(28,5,8,'2026-06-03 16:35:46'),(29,5,8,'2026-06-03 16:41:15'),(30,1,9,'2026-06-03 16:50:57'),(31,1,8,'2026-06-03 16:54:48'),(32,1,6,'2026-06-03 18:29:31'),(33,1,6,'2026-06-03 18:30:09'),(34,5,5,'2026-06-03 18:44:01');
+INSERT INTO `browse_history` VALUES (1,5,1,'2026-06-03 14:28:41'),(2,5,1,'2026-06-03 14:28:45'),(3,5,2,'2026-06-03 14:32:24'),(4,6,3,'2026-06-03 14:34:49'),(5,6,2,'2026-06-03 14:35:04'),(6,5,5,'2026-06-03 14:43:57'),(7,6,5,'2026-06-03 14:44:50'),(8,1,5,'2026-06-03 14:45:31'),(9,1,5,'2026-06-03 14:47:43'),(10,1,5,'2026-06-03 14:53:23'),(11,5,5,'2026-06-03 14:53:45'),(12,5,5,'2026-06-03 14:53:51'),(13,5,5,'2026-06-03 14:54:04'),(14,5,5,'2026-06-03 14:54:10'),(15,5,5,'2026-06-03 14:56:06'),(16,5,6,'2026-06-03 14:56:31'),(17,5,6,'2026-06-03 14:56:42'),(18,6,7,'2026-06-03 15:22:26'),(19,5,7,'2026-06-03 15:22:49'),(20,5,8,'2026-06-03 16:13:12'),(21,6,9,'2026-06-03 16:14:57'),(22,6,8,'2026-06-03 16:21:43'),(23,6,8,'2026-06-03 16:21:48'),(24,6,9,'2026-06-03 16:24:16'),(25,6,8,'2026-06-03 16:24:19'),(26,6,8,'2026-06-03 16:28:46'),(27,5,9,'2026-06-03 16:35:42'),(28,5,8,'2026-06-03 16:35:46'),(29,5,8,'2026-06-03 16:41:15'),(30,1,9,'2026-06-03 16:50:57'),(31,1,8,'2026-06-03 16:54:48'),(32,1,6,'2026-06-03 18:29:31'),(33,1,6,'2026-06-03 18:30:09'),(34,5,5,'2026-06-03 18:44:01'),(35,5,9,'2026-06-04 19:38:39'),(36,5,9,'2026-06-04 19:39:31'),(37,3,11,'2026-06-04 19:48:29'),(38,8,11,'2026-06-04 20:23:56'),(39,8,12,'2026-06-04 20:30:48'),(40,8,12,'2026-06-04 20:31:19'),(41,8,12,'2026-06-04 20:34:28'),(42,8,13,'2026-06-04 20:48:57'),(43,6,13,'2026-06-04 20:49:22'),(50,6,13,'2026-06-04 21:33:31');
 /*!40000 ALTER TABLE `browse_history` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -126,7 +126,7 @@ CREATE TABLE `comment` (
   PRIMARY KEY (`id`),
   KEY `idx_author_id` (`author_id`),
   KEY `idx_post_id` (`post_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='评论回复表';
+) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='评论回复表';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -135,7 +135,7 @@ CREATE TABLE `comment` (
 
 LOCK TABLES `comment` WRITE;
 /*!40000 ALTER TABLE `comment` DISABLE KEYS */;
-INSERT INTO `comment` VALUES (1,1,5,'你好',NULL,0,'NORMAL','2026-06-01 17:11:04','2026-06-01 17:11:04'),(2,1,6,'你好',NULL,0,'NORMAL','2026-06-03 13:38:29','2026-06-03 13:38:29'),(3,4,5,'你好',NULL,0,'NORMAL','2026-06-03 13:47:13','2026-06-03 13:47:13'),(4,4,6,'你好',NULL,0,'NORMAL','2026-06-03 13:47:34','2026-06-03 13:47:34'),(5,5,6,'测试接受悬赏',NULL,1,'NORMAL','2026-06-03 14:44:59','2026-06-03 14:53:46'),(6,6,5,'你好',NULL,1,'NORMAL','2026-06-03 14:56:35','2026-06-03 14:56:43'),(7,8,5,'测试活跃度更新',NULL,0,'NORMAL','2026-06-03 16:13:22','2026-06-03 16:13:22'),(8,8,6,'测试',NULL,0,'NORMAL','2026-06-03 16:21:54','2026-06-03 17:59:22');
+INSERT INTO `comment` VALUES (1,1,5,'你好',NULL,0,'ACTIVE','2026-06-01 17:11:04','2026-06-04 21:45:38'),(2,1,6,'你好',NULL,0,'ACTIVE','2026-06-03 13:38:29','2026-06-04 21:45:38'),(3,4,5,'你好',NULL,0,'ACTIVE','2026-06-03 13:47:13','2026-06-04 21:45:38'),(4,4,6,'你好',NULL,0,'ACTIVE','2026-06-03 13:47:34','2026-06-04 21:45:38'),(5,5,6,'测试接受悬赏',NULL,1,'ACTIVE','2026-06-03 14:44:59','2026-06-04 21:45:38'),(6,6,5,'你好',NULL,1,'ACTIVE','2026-06-03 14:56:35','2026-06-04 21:45:38'),(7,8,5,'测试活跃度更新',NULL,0,'ACTIVE','2026-06-03 16:13:22','2026-06-04 21:45:38'),(8,8,6,'测试',NULL,0,'ACTIVE','2026-06-03 16:21:54','2026-06-04 21:45:38'),(9,11,3,'你好',NULL,0,'DELETED','2026-06-04 19:48:37','2026-06-04 19:48:43'),(10,11,3,'你好',NULL,0,'ACTIVE','2026-06-04 19:48:46','2026-06-04 21:45:38'),(11,12,8,'测试禁言是否可以评论',NULL,0,'ACTIVE','2026-06-04 20:31:28','2026-06-04 21:45:38'),(12,12,8,'测试禁言以后是否可以评论',NULL,0,'ACTIVE','2026-06-04 20:34:37','2026-06-04 21:45:38'),(13,13,8,'测试楼中楼',NULL,0,'ACTIVE','2026-06-04 20:49:02','2026-06-04 21:45:38'),(14,13,8,'测试楼中楼',13,0,'ACTIVE','2026-06-04 20:49:10','2026-06-04 21:45:38'),(15,13,8,'测试',13,0,'ACTIVE','2026-06-04 20:49:14','2026-06-04 21:45:38'),(16,13,6,'你好',13,0,'ACTIVE','2026-06-04 20:49:28','2026-06-04 21:45:38'),(17,13,6,'你好',NULL,0,'ACTIVE','2026-06-04 20:49:32','2026-06-04 21:45:38'),(18,2,2,'测试系统管理员后台屏蔽',NULL,0,'ACTIVE','2026-06-04 21:27:47','2026-06-04 21:45:38'),(19,13,6,'nb兄弟\n',NULL,0,'ACTIVE','2026-06-04 21:33:39','2026-06-04 21:46:29');
 /*!40000 ALTER TABLE `comment` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -155,7 +155,7 @@ CREATE TABLE `daily_check_in` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_user_date` (`user_id`,`check_in_date`),
   KEY `idx_user_id` (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='姣忔棩绛惧埌琛';
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='姣忔棩绛惧埌琛';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -164,7 +164,7 @@ CREATE TABLE `daily_check_in` (
 
 LOCK TABLES `daily_check_in` WRITE;
 /*!40000 ALTER TABLE `daily_check_in` DISABLE KEYS */;
-INSERT INTO `daily_check_in` VALUES (1,6,'2026-06-03',15,'2026-06-03 14:14:53'),(2,5,'2026-06-03',11,'2026-06-03 14:28:36'),(3,1,'2026-06-03',14,'2026-06-03 18:21:28'),(4,3,'2026-06-03',13,'2026-06-03 18:46:55');
+INSERT INTO `daily_check_in` VALUES (1,6,'2026-06-03',15,'2026-06-03 14:14:53'),(2,5,'2026-06-03',11,'2026-06-03 14:28:36'),(3,1,'2026-06-03',14,'2026-06-03 18:21:28'),(4,3,'2026-06-03',13,'2026-06-03 18:46:55'),(5,5,'2026-06-04',9,'2026-06-04 19:38:15'),(6,6,'2026-06-04',5,'2026-06-04 19:39:48'),(7,1,'2026-06-04',15,'2026-06-04 19:41:57'),(8,3,'2026-06-04',7,'2026-06-04 19:51:28'),(9,8,'2026-06-04',12,'2026-06-04 20:24:13'),(10,2,'2026-06-04',7,'2026-06-04 21:30:12');
 /*!40000 ALTER TABLE `daily_check_in` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -185,7 +185,7 @@ CREATE TABLE `friend_relation` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_user_friend` (`user_id`,`friend_id`),
   KEY `idx_friend_id` (`friend_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=27 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='濂藉弸鍏崇郴琛';
+) ENGINE=InnoDB AUTO_INCREMENT=41 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='濂藉弸鍏崇郴琛';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -194,7 +194,7 @@ CREATE TABLE `friend_relation` (
 
 LOCK TABLES `friend_relation` WRITE;
 /*!40000 ALTER TABLE `friend_relation` DISABLE KEYS */;
-INSERT INTO `friend_relation` VALUES (11,1,7,'ACCEPTED','2026-06-03 18:21:30','2026-06-03 18:21:30'),(12,7,1,'ACCEPTED','2026-06-03 18:21:30','2026-06-03 18:21:30'),(13,6,7,'ACCEPTED','2026-06-03 18:24:41','2026-06-03 18:24:41'),(14,7,6,'ACCEPTED','2026-06-03 18:24:41','2026-06-03 18:24:41'),(19,6,2,'ACCEPTED','2026-06-03 18:24:50','2026-06-03 18:24:50'),(20,2,6,'ACCEPTED','2026-06-03 18:24:50','2026-06-03 18:24:50'),(23,5,7,'ACCEPTED','2026-06-03 18:42:59','2026-06-03 18:42:59'),(24,7,5,'ACCEPTED','2026-06-03 18:42:59','2026-06-03 18:42:59'),(25,3,7,'ACCEPTED','2026-06-03 18:46:06','2026-06-03 18:46:06'),(26,7,3,'ACCEPTED','2026-06-03 18:46:06','2026-06-03 18:46:06');
+INSERT INTO `friend_relation` VALUES (11,1,7,'ACCEPTED','2026-06-03 18:21:30','2026-06-03 18:21:30'),(12,7,1,'ACCEPTED','2026-06-03 18:21:30','2026-06-03 18:21:30'),(13,6,7,'ACCEPTED','2026-06-03 18:24:41','2026-06-03 18:24:41'),(14,7,6,'ACCEPTED','2026-06-03 18:24:41','2026-06-03 18:24:41'),(19,6,2,'ACCEPTED','2026-06-03 18:24:50','2026-06-03 18:24:50'),(20,2,6,'ACCEPTED','2026-06-03 18:24:50','2026-06-03 18:24:50'),(23,5,7,'ACCEPTED','2026-06-03 18:42:59','2026-06-03 18:42:59'),(24,7,5,'ACCEPTED','2026-06-03 18:42:59','2026-06-03 18:42:59'),(25,3,7,'ACCEPTED','2026-06-03 18:46:06','2026-06-03 18:46:06'),(26,7,3,'ACCEPTED','2026-06-03 18:46:06','2026-06-03 18:46:06'),(33,6,5,'ACCEPTED','2026-06-04 20:15:18','2026-06-04 20:15:10'),(34,5,6,'ACCEPTED','2026-06-04 20:15:20','2026-06-04 20:15:20'),(35,8,7,'ACCEPTED','2026-06-04 20:22:57','2026-06-04 20:22:57'),(36,7,8,'ACCEPTED','2026-06-04 20:22:57','2026-06-04 20:22:57'),(37,6,8,'ACCEPTED','2026-06-04 20:23:27','2026-06-04 20:23:27'),(38,8,6,'ACCEPTED','2026-06-04 20:23:33','2026-06-04 20:23:33'),(39,2,7,'ACCEPTED','2026-06-04 21:26:03','2026-06-04 21:26:03'),(40,7,2,'ACCEPTED','2026-06-04 21:26:03','2026-06-04 21:26:03');
 /*!40000 ALTER TABLE `friend_relation` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -216,7 +216,7 @@ CREATE TABLE `message` (
   PRIMARY KEY (`id`),
   KEY `idx_sender_receiver` (`sender_id`,`receiver_id`),
   KEY `idx_receiver_status` (`receiver_id`,`status`)
-) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='私聊消息表';
+) ENGINE=InnoDB AUTO_INCREMENT=44 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='私聊消息表';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -225,7 +225,7 @@ CREATE TABLE `message` (
 
 LOCK TABLES `message` WRITE;
 /*!40000 ALTER TABLE `message` DISABLE KEYS */;
-INSERT INTO `message` VALUES (1,6,5,'你好，我是ytt1',1,1,'2026-06-03 14:41:25'),(2,5,6,'你好，我是ytt',1,1,'2026-06-03 14:42:10'),(3,5,1,'你好，我是ytt',1,1,'2026-06-03 14:43:02'),(4,1,5,'你好',1,1,'2026-06-03 14:53:36'),(5,6,5,'测试',1,1,'2026-06-03 16:22:15'),(6,1,6,'您在吧中的帖子「测试活跃度」已被管理员隐藏',1,1,'2026-06-03 16:54:41'),(7,1,5,'您在吧中的帖子「测试活跃度更新」已被管理员隐藏',1,1,'2026-06-03 17:57:05'),(8,1,6,'您在吧中的帖子「测试置顶」已被管理员隐藏',1,1,'2026-06-03 18:01:08'),(9,1,6,'您在吧中的帖子「测试活跃度」已被管理员删除',1,1,'2026-06-03 18:02:54'),(10,6,6,'贴吧「孙吧」已被解散',1,1,'2026-06-03 18:03:58'),(11,6,5,'贴吧「孙吧」已被解散',1,1,'2026-06-03 18:03:58'),(12,7,6,'贴吧「孙吧」已被解散',1,1,'2026-06-03 18:15:26'),(13,7,5,'贴吧「孙吧」已被解散',1,1,'2026-06-03 18:15:26'),(14,6,5,'你好',1,1,'2026-06-03 18:25:03'),(15,7,6,'您在吧中的帖子「测试置顶」已被管理员删除',1,1,'2026-06-03 18:42:31'),(16,7,5,'您在吧中的帖子「测试活跃度更新」已被管理员删除',1,1,'2026-06-03 18:42:34'),(17,3,5,'第一条消息测试（未加好友）',1,0,'2026-06-03 18:45:23'),(18,3,7,'你好',1,0,'2026-06-03 18:46:13'),(19,3,6,'测试第一条消息发送（未加好友）',1,0,'2026-06-03 18:50:58');
+INSERT INTO `message` VALUES (1,6,5,'你好，我是ytt1',1,1,'2026-06-03 14:41:25'),(2,5,6,'你好，我是ytt',1,1,'2026-06-03 14:42:10'),(3,5,1,'你好，我是ytt',1,1,'2026-06-03 14:43:02'),(4,1,5,'你好',1,1,'2026-06-03 14:53:36'),(5,6,5,'测试',1,1,'2026-06-03 16:22:15'),(6,1,6,'您在吧中的帖子「测试活跃度」已被管理员隐藏',1,1,'2026-06-03 16:54:41'),(7,1,5,'您在吧中的帖子「测试活跃度更新」已被管理员隐藏',1,1,'2026-06-03 17:57:05'),(8,1,6,'您在吧中的帖子「测试置顶」已被管理员隐藏',1,1,'2026-06-03 18:01:08'),(9,1,6,'您在吧中的帖子「测试活跃度」已被管理员删除',1,1,'2026-06-03 18:02:54'),(10,6,6,'贴吧「孙吧」已被解散',1,1,'2026-06-03 18:03:58'),(11,6,5,'贴吧「孙吧」已被解散',1,1,'2026-06-03 18:03:58'),(12,7,6,'贴吧「孙吧」已被解散',1,1,'2026-06-03 18:15:26'),(13,7,5,'贴吧「孙吧」已被解散',1,1,'2026-06-03 18:15:26'),(14,6,5,'你好',1,1,'2026-06-03 18:25:03'),(15,7,6,'您在吧中的帖子「测试置顶」已被管理员删除',1,1,'2026-06-03 18:42:31'),(16,7,5,'您在吧中的帖子「测试活跃度更新」已被管理员删除',1,1,'2026-06-03 18:42:34'),(17,3,5,'第一条消息测试（未加好友）',1,1,'2026-06-03 18:45:23'),(18,3,7,'你好',1,1,'2026-06-03 18:46:13'),(19,3,6,'测试第一条消息发送（未加好友）',1,1,'2026-06-03 18:50:58'),(20,7,6,'贴吧「孙吧」已被解散',1,1,'2026-06-04 19:41:20'),(21,7,5,'贴吧「孙吧」已被解散',1,1,'2026-06-04 19:41:20'),(22,7,3,'贴吧「孙吧」已被解散',1,1,'2026-06-04 19:41:20'),(23,3,7,'ok',1,1,'2026-06-04 19:42:51'),(24,3,1,'你好',1,1,'2026-06-04 19:48:59'),(25,5,6,'你好',1,1,'2026-06-04 20:06:45'),(26,6,5,'你好',1,1,'2026-06-04 20:07:06'),(27,6,5,'你好',1,1,'2026-06-04 20:14:21'),(28,5,6,'你好1',1,1,'2026-06-04 20:14:26'),(29,5,6,'你好',1,1,'2026-06-04 20:15:36'),(30,5,6,'nihao',1,1,'2026-06-04 20:15:37'),(31,5,6,'你好',1,1,'2026-06-04 20:15:42'),(32,8,6,'你好',1,1,'2026-06-04 20:23:18'),(33,6,8,'你好',1,1,'2026-06-04 20:23:21'),(34,6,8,'你好',1,1,'2026-06-04 20:23:39'),(35,7,6,'您在吧中的帖子「测试管理员管理操作」已被管理员隐藏',1,1,'2026-06-04 20:30:18'),(36,7,8,'有人回复了您的评论：你好',1,1,'2026-06-04 20:49:28'),(37,7,8,'有人回复了您的评论：你好',1,1,'2026-06-04 20:49:32'),(38,7,6,'您在吧中的帖子「测试活跃度」已被管理员删除',1,1,'2026-06-04 21:26:53'),(39,7,5,'有人回复了您的评论：测试系统管理员后台屏蔽',1,0,'2026-06-04 21:27:47'),(40,7,2,'系统管理员已将您的帖子「测试系统管理员后台屏蔽」屏蔽',1,1,'2026-06-04 21:28:06'),(41,7,8,'有人回复了您的评论：nb兄弟\n',1,0,'2026-06-04 21:33:39'),(42,6,7,'nb兄弟',1,0,'2026-06-04 21:33:55'),(43,7,6,'系统管理员已将您的评论屏蔽',1,0,'2026-06-04 21:41:03');
 /*!40000 ALTER TABLE `message` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -254,7 +254,7 @@ CREATE TABLE `post` (
   KEY `idx_author_id` (`author_id`),
   KEY `idx_board_id` (`board_id`),
   KEY `idx_created_at` (`created_at`)
-) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='帖子表';
+) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='帖子表';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -263,7 +263,7 @@ CREATE TABLE `post` (
 
 LOCK TABLES `post` WRITE;
 /*!40000 ALTER TABLE `post` DISABLE KEYS */;
-INSERT INTO `post` VALUES (1,1,5,'这是一个帖子','rt','NORMAL',0,0,0,0,'NORMAL','2026-06-01 10:30:31','2026-06-01 10:30:31'),(2,2,5,'你好','你好啊','NORMAL',0,0,0,0,'NORMAL','2026-06-03 13:35:31','2026-06-03 13:35:31'),(3,1,6,'测试','测试ing\n','NORMAL',0,0,0,0,'NORMAL','2026-06-03 13:42:41','2026-06-03 13:42:41'),(4,3,5,'你好','你好','NORMAL',0,0,0,0,'NORMAL','2026-06-03 13:47:09','2026-06-03 13:47:09'),(5,1,5,'测试','测试悬赏帖子','REWARD',0,0,0,0,'ACTIVE','2026-06-03 14:43:55','2026-06-03 14:53:46'),(6,2,5,'测试悬赏','测试悬赏','REWARD',0,0,0,0,'ACTIVE','2026-06-03 14:56:24','2026-06-03 14:56:43'),(7,5,6,'测试置顶','测试','NORMAL',0,1,0,1,'DELETED','2026-06-03 15:22:24','2026-06-03 18:42:31'),(8,5,5,'测试活跃度更新','测试','NORMAL',0,0,0,0,'DELETED','2026-06-03 16:13:07','2026-06-03 18:42:34'),(9,5,6,'测试活跃度','测试','NORMAL',0,0,0,0,'ACTIVE','2026-06-03 16:14:50','2026-06-03 18:02:58');
+INSERT INTO `post` VALUES (1,1,5,'这是一个帖子','rt','NORMAL',0,0,0,0,'NORMAL','2026-06-01 10:30:31','2026-06-01 10:30:31'),(2,2,5,'你好','你好啊','NORMAL',0,0,0,0,'NORMAL','2026-06-03 13:35:31','2026-06-03 13:35:31'),(3,1,6,'测试','测试ing\n','NORMAL',0,0,0,0,'NORMAL','2026-06-03 13:42:41','2026-06-03 13:42:41'),(4,3,5,'你好','你好','NORMAL',0,0,0,0,'NORMAL','2026-06-03 13:47:09','2026-06-03 13:47:09'),(5,1,5,'测试','测试悬赏帖子','REWARD',0,0,0,0,'ACTIVE','2026-06-03 14:43:55','2026-06-03 14:53:46'),(6,2,5,'测试悬赏','测试悬赏','REWARD',0,0,0,0,'ACTIVE','2026-06-03 14:56:24','2026-06-03 14:56:43'),(7,5,6,'测试置顶','测试','NORMAL',0,0,0,1,'ACTIVE','2026-06-03 15:22:24','2026-06-04 21:47:43'),(8,5,5,'测试活跃度更新','测试','NORMAL',0,0,0,0,'ACTIVE','2026-06-03 16:13:07','2026-06-04 21:26:58'),(9,5,6,'测试活跃度','测试','NORMAL',0,0,0,0,'ACTIVE','2026-06-03 16:14:50','2026-06-04 21:26:57'),(10,1,3,'测试未加入','测试未加入','NORMAL',0,0,0,0,'ACTIVE','2026-06-04 19:48:13','2026-06-04 19:48:13'),(11,1,3,'测试未加入悬赏','测试未加入悬赏','REWARD',4,0,0,0,'ACTIVE','2026-06-04 19:48:28','2026-06-04 19:48:28'),(12,4,6,'测试管理员管理操作','测试','NORMAL',0,1,0,0,'ACTIVE','2026-06-04 20:25:17','2026-06-04 20:30:21'),(13,6,8,'测试楼中楼','测试','NORMAL',0,0,0,0,'ACTIVE','2026-06-04 20:48:56','2026-06-04 20:48:56'),(14,2,2,'测试系统管理员后台屏蔽','测试','NORMAL',0,0,0,0,'ACTIVE','2026-06-04 21:27:38','2026-06-04 21:27:38');
 /*!40000 ALTER TABLE `post` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -381,7 +381,7 @@ CREATE TABLE `user` (
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_username` (`username`)
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='用户表';
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='用户表';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -390,7 +390,7 @@ CREATE TABLE `user` (
 
 LOCK TABLES `user` WRITE;
 /*!40000 ALTER TABLE `user` DISABLE KEYS */;
-INSERT INTO `user` VALUES (1,'fx','$2a$10$VFcSDdlOqS2nSrELQ6Uqp.Px6dog/6laE2pUGOUyDpukSyeFKh.fC',NULL,NULL,NULL,NULL,14,'SYS_ADMIN','ACTIVE',NULL,'我是一个扫福瑞','2026-05-26 22:25:13','2026-05-27 16:22:08'),(2,'admin','$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iAt6Z5Eh',NULL,NULL,NULL,NULL,9999,'SYS_ADMIN','ACTIVE',NULL,NULL,'2026-05-27 16:13:45','2026-05-27 16:13:45'),(3,'扫福瑞','$2a$10$GCGnUcPgIDk9ye.gyEbO5.yqGNy2D/M4BLXGBIXPU.U5kKY9uHqhq',NULL,NULL,NULL,NULL,13,'USER','ACTIVE',NULL,'我是火车站','2026-05-27 16:24:49','2026-05-27 16:25:30'),(4,'testban','$2a$10$BW3M202Qz.a5qpuPMAuCs.WlmBUtAVhZj0psnJ961wUOBZUCi4PLe',NULL,NULL,NULL,NULL,0,'USER','ACTIVE',NULL,NULL,'2026-05-27 16:40:46','2026-05-27 16:40:46'),(5,'ytt','$2a$10$Beed0hw7oxviy2LY3KUdBeU46TmL2ksnLov3unfzBe4cvIJ4BfO4e','123','123','学生','南昌',110,'USER','ACTIVE','/uploads/avatars/avatar_5_14105de0.jpg','你可以叫我YellowToTruth','2026-05-27 19:50:10','2026-06-03 15:17:25'),(6,'ytt1','$2a$10$acC3hx5wawQm3.RJzX8vzuDcIi9sH0LL897HlJ/Q7WIegpli8Y8qq',NULL,NULL,NULL,NULL,1116,'USER','ACTIVE',NULL,NULL,'2026-06-03 13:37:12','2026-06-03 13:37:12'),(7,'系统通知','$2a$10$1CTJyV1ZvVYerEGNan.YgOwik9TJb9YLhfL6KPqpwiuR0z4lwtCnW',NULL,NULL,NULL,NULL,0,'NOTIFY_ADMIN','ACTIVE',NULL,'系统通知账号，由所有系统管理员共同运营','2026-06-03 18:15:07','2026-06-03 18:15:07');
+INSERT INTO `user` VALUES (1,'fx','$2a$10$VFcSDdlOqS2nSrELQ6Uqp.Px6dog/6laE2pUGOUyDpukSyeFKh.fC',NULL,NULL,NULL,NULL,29,'SYS_ADMIN','ACTIVE',NULL,'我是一个扫福瑞','2026-05-26 22:25:13','2026-05-27 16:22:08'),(2,'admin','$2a$10$I35Fn0fJHtiIWMHHqpgMFux017nZesF3wb0V4EmXwpamUFrvCt21.',NULL,NULL,NULL,NULL,10006,'SYS_ADMIN','ACTIVE','/uploads/avatars/avatar_2_edf18fad.jpg',NULL,'2026-05-27 16:13:45','2026-06-04 21:26:01'),(3,'扫福瑞','$2a$10$GCGnUcPgIDk9ye.gyEbO5.yqGNy2D/M4BLXGBIXPU.U5kKY9uHqhq',NULL,NULL,NULL,NULL,16,'USER','ACTIVE',NULL,'我是火车站','2026-05-27 16:24:49','2026-05-27 16:25:30'),(4,'testban','$2a$10$BW3M202Qz.a5qpuPMAuCs.WlmBUtAVhZj0psnJ961wUOBZUCi4PLe',NULL,NULL,NULL,NULL,0,'USER','ACTIVE',NULL,NULL,'2026-05-27 16:40:46','2026-05-27 16:40:46'),(5,'ytt','$2a$10$Beed0hw7oxviy2LY3KUdBeU46TmL2ksnLov3unfzBe4cvIJ4BfO4e','123','123','学生','南昌',119,'USER','ACTIVE','/uploads/avatars/avatar_5_219446f2.jpg','你可以叫我YellowToTruth','2026-05-27 19:50:10','2026-06-04 19:39:22'),(6,'ytt1','$2a$10$acC3hx5wawQm3.RJzX8vzuDcIi9sH0LL897HlJ/Q7WIegpli8Y8qq','123','123','','南昌',1121,'USER','ACTIVE','/uploads/avatars/avatar_6_79655fc4.jpg','','2026-06-03 13:37:12','2026-06-04 21:38:08'),(7,'系统通知','$2a$10$H82JIfkbogWD0IzIDl72RufV4170LTnffG6tCUo85H3ueKbd18Q66','','','','',0,'NOTIFY_ADMIN','ACTIVE','/uploads/avatars/avatar_7_12e5744a.jpg','我是YellowToTruth','2026-06-03 18:15:07','2026-06-04 21:21:55'),(8,'ytt2','$2a$10$lgAAv0y2Ubz35iB9oTsw/.iaoPIwWTangoloq73e7rAafgVJoCqTi',NULL,NULL,NULL,NULL,12,'USER','ACTIVE','/uploads/avatars/avatar_8_b9f0cdf4.jpg',NULL,'2026-06-04 20:22:49','2026-06-04 20:36:16');
 /*!40000 ALTER TABLE `user` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -412,7 +412,7 @@ CREATE TABLE `user_board_relation` (
   UNIQUE KEY `uk_user_board` (`user_id`,`board_id`),
   KEY `idx_board_id` (`board_id`),
   KEY `idx_user_id` (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='用户与板块权限关联表';
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='用户与板块权限关联表';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -421,7 +421,7 @@ CREATE TABLE `user_board_relation` (
 
 LOCK TABLES `user_board_relation` WRITE;
 /*!40000 ALTER TABLE `user_board_relation` DISABLE KEYS */;
-INSERT INTO `user_board_relation` VALUES (1,6,4,'OWNER','2026-06-03 14:15:36',0),(2,5,5,'OWNER','2026-06-03 15:16:27',7),(3,6,5,'MEMBER','2026-06-03 16:14:41',10),(5,5,4,'MEMBER','2026-06-03 18:02:32',0),(6,3,4,'MEMBER','2026-06-03 18:47:04',0);
+INSERT INTO `user_board_relation` VALUES (1,6,4,'OWNER','2026-06-03 14:15:36',5),(2,5,5,'OWNER','2026-06-03 15:16:27',7),(3,6,5,'MEMBER','2026-06-03 16:14:41',10),(5,5,4,'MEMBER','2026-06-03 18:02:32',0),(6,3,4,'MEMBER','2026-06-03 18:47:04',0),(7,5,2,'MEMBER','2026-06-04 20:16:27',0),(8,8,5,'MEMBER','2026-06-04 20:24:07',0),(9,8,4,'MUTED','2026-06-04 20:24:51',4),(10,8,6,'OWNER','2026-06-04 20:36:36',11),(11,6,6,'MEMBER','2026-06-04 20:36:44',6);
 /*!40000 ALTER TABLE `user_board_relation` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -434,4 +434,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-06-03 19:02:13
+-- Dump completed on 2026-06-04 21:56:08
