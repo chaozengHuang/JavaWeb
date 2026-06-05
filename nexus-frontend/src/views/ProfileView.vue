@@ -559,6 +559,10 @@ onMounted(async () => {
 
 .profile-avatar {
   border: 3px solid #e4e7ed;
+  background: #409eff;
+  color: #fff;
+  font-weight: 600;
+  font-size: 40px;
 }
 
 .avatar-upload-label {
@@ -726,5 +730,12 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   margin-top: 4px;
+}
+
+:deep(.myboard-info .el-avatar) {
+  background: #409eff;
+  color: #fff;
+  font-weight: 600;
+  font-size: 16px;
 }
 </style>

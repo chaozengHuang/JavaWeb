@@ -245,4 +245,12 @@ onMounted(() => {
   margin-top: 12px;
   justify-content: flex-end;
 }
+
+:deep(.friend-info .el-avatar),
+:deep(.request-info .el-avatar) {
+  background: #409eff;
+  color: #fff;
+  font-weight: 600;
+  font-size: 18px;
+}
 </style>

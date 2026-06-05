@@ -266,7 +266,7 @@ watch(activeTab, (tab) => {
         <el-form label-width="80px">
           <el-form-item label="吧头像">
             <div v-loading="avatarUploading" style="display:flex;align-items:center;gap:12px;">
-              <el-avatar :size="64" :src="boardDetail?.avatar ? 'http://localhost:8081' + boardDetail.avatar : ''" shape="square">
+              <el-avatar class="board-edit-avatar" :size="64" :src="boardDetail?.avatar ? 'http://localhost:8081' + boardDetail.avatar : ''" shape="square">
                 {{ boardDetail?.name?.charAt(0) || '吧' }}
               </el-avatar>
               <label v-if="isOwner" style="cursor:pointer;color:#409eff;font-size:13px;">
@@ -434,5 +434,12 @@ watch(activeTab, (tab) => {
   display: flex;
   justify-content: center;
   padding: 16px 0 0;
+}
+
+:deep(.board-edit-avatar .el-avatar) {
+  background: #409eff;
+  color: #fff;
+  font-weight: 600;
+  font-size: 26px;
 }
 </style>
