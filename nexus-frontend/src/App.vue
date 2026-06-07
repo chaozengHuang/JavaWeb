@@ -201,7 +201,11 @@ defineExpose({ user, loadUser })
 
 <template>
   <div v-if="!user" class="app-layout">
-    <router-view @login-success="onLoginSuccess" />
+    <router-view v-slot="{ Component, route: r }">
+      <transition name="fade" mode="out-in">
+        <component :is="Component" :key="r.path" @login-success="onLoginSuccess" />
+      </transition>
+    </router-view>
   </div>
 
   <div v-else class="app-layout">
@@ -249,7 +253,11 @@ defineExpose({ user, loadUser })
     </div>
 
     <div class="app-content" :class="{ 'admin-content': route.path.startsWith('/admin') }">
-      <router-view :key="$route.fullPath" />
+      <router-view v-slot="{ Component, route: r }">
+        <transition name="fade" mode="out-in">
+          <component :is="Component" :key="r.path" />
+        </transition>
+      </router-view>
     </div>
   </div>
 </template>
@@ -323,6 +331,7 @@ body {
 }
 
 .app-content {
+  position: relative;
   min-height: calc(100vh - 60px);
   padding: 20px;
 }
@@ -366,5 +375,26 @@ body {
 
 .user-avatar-btn:hover {
   border-color: #409eff;
+}
+
+/* 页面切换动画 — 滑入+淡入 */
+.fade-enter-active {
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.fade-leave-active {
+  transition: all 0.2s cubic-bezier(0.55, 0, 0.55, 0.2);
+  position: absolute;
+  width: 100%;
+}
+
+.fade-enter-from {
+  opacity: 0;
+  transform: translateX(24px) scale(0.98);
+}
+
+.fade-leave-to {
+  opacity: 0;
+  transform: translateX(-16px) scale(0.98);
 }
 </style>
