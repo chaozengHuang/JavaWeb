@@ -54,13 +54,16 @@ public class PostService {
             throw new BusinessException(401, "请先登录");
         }
 
-        // 检查是否在目标吧被禁言
+        // 检查是否在该吧被禁言或未加入
         Long boardId = dto.getBoardId() != null ? dto.getBoardId() : 1L;
         UserBoardRelation rel = boardRelationMapper.selectOne(
                 new LambdaQueryWrapper<UserBoardRelation>()
                         .eq(UserBoardRelation::getUserId, userId)
                         .eq(UserBoardRelation::getBoardId, boardId));
-        if (rel != null && "MUTED".equals(rel.getBoardRole())) {
+        if (rel == null) {
+            throw new BusinessException(403, "REQUIRE_JOIN:请先加入该吧后再发帖");
+        }
+        if ("MUTED".equals(rel.getBoardRole())) {
             throw new BusinessException("您在该吧已被禁言，无法发帖");
         }
 

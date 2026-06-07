@@ -392,6 +392,18 @@ public class BoardService {
         relation.setBoardRole("MEMBER");
         relation.setActivityPoints(0);
         relationMapper.insert(relation);
+
+        // 通知吧主和管理员：新成员加入
+        User joiner = userMapper.selectById(userId);
+        String joinerName = joiner != null ? joiner.getUsername() : "未知用户";
+        List<UserBoardRelation> managers = relationMapper.selectList(
+                new LambdaQueryWrapper<UserBoardRelation>()
+                        .eq(UserBoardRelation::getBoardId, boardId)
+                        .in(UserBoardRelation::getBoardRole, List.of("OWNER", "ADMIN")));
+        for (UserBoardRelation m : managers) {
+            sendSystemNotification(m.getUserId(), joinerName + " 加入了贴吧「" + board.getName() + "」");
+        }
+
         log.info("用户 {} 加入了贴吧 {}", userId, boardId);
     }
 

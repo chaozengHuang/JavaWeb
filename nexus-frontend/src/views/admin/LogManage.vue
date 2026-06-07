@@ -50,17 +50,12 @@ onMounted(() => fetchLogs())
   <div class="log-page">
     <h3>操作日志</h3>
     <el-table :data="logs" v-loading="loading" stripe border>
-      <el-table-column prop="id" label="ID" width="70" />
       <el-table-column prop="adminUsername" label="操作人" width="120" />
       <el-table-column label="操作" width="130">
         <template #default="{ row }">
           <el-tag size="small">{{ actionLabel(row.action) }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="目标类型" width="80">
-        <template #default="{ row }">{{ targetLabel(row.targetType) }}</template>
-      </el-table-column>
-      <el-table-column prop="targetId" label="目标ID" width="80" />
       <el-table-column prop="detail" label="详情" min-width="200" show-overflow-tooltip />
       <el-table-column label="时间" width="170">
         <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>

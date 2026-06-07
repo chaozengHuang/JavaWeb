@@ -229,15 +229,35 @@ public class FriendService {
         return result;
     }
 
-    public boolean isFriend(Long otherUserId) {
+    public String getFriendStatus(Long otherUserId) {
         Long userId = getCurrentUserId();
-        if (userId == null) return false;
-        Long count = friendRelationMapper.selectCount(
+        if (userId == null) return "none";
+        // 是否已是好友
+        Long acceptedCount = friendRelationMapper.selectCount(
                 new LambdaQueryWrapper<FriendRelation>()
                         .eq(FriendRelation::getUserId, userId)
                         .eq(FriendRelation::getFriendId, otherUserId)
                         .eq(FriendRelation::getStatus, "ACCEPTED"));
-        return count > 0;
+        if (acceptedCount > 0) return "accepted";
+        // 我是否已发送请求等待对方通过
+        Long pendingSent = friendRelationMapper.selectCount(
+                new LambdaQueryWrapper<FriendRelation>()
+                        .eq(FriendRelation::getUserId, userId)
+                        .eq(FriendRelation::getFriendId, otherUserId)
+                        .eq(FriendRelation::getStatus, "PENDING"));
+        if (pendingSent > 0) return "pending_sent";
+        // 对方是否已向我发送请求
+        Long pendingReceived = friendRelationMapper.selectCount(
+                new LambdaQueryWrapper<FriendRelation>()
+                        .eq(FriendRelation::getUserId, otherUserId)
+                        .eq(FriendRelation::getFriendId, userId)
+                        .eq(FriendRelation::getStatus, "PENDING"));
+        if (pendingReceived > 0) return "pending_received";
+        return "none";
+    }
+
+    public boolean isFriend(Long otherUserId) {
+        return "accepted".equals(getFriendStatus(otherUserId));
     }
 
     private void ensureAdminFriends(Long userId) {

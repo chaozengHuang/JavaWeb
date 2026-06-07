@@ -145,7 +145,15 @@ const handleCreate = async () => {
     fetchPosts()
     fetchBoardDetail()
   } catch (error) {
-    ElMessage({ type: 'error', message: error.message || '发帖失败' })
+    const msg = error.message || '发帖失败'
+    if (msg.includes('REQUIRE_JOIN')) {
+      ElMessageBox.confirm(
+        '请先加入本吧后再发帖', '提示',
+        { confirmButtonText: '立即加入', cancelButtonText: '取消', type: 'warning' }
+      ).then(() => handleJoin()).catch(() => {})
+    } else {
+      ElMessage({ type: 'error', message: msg })
+    }
   } finally {
     createLoading.value = false
   }
@@ -239,10 +247,15 @@ const onBoardDeleted = () => {
 
 const handleJoin = async () => {
   joinLoading.value = true
+  const boardName = boardDetail.value?.board?.name || '该贴吧'
   try {
     await joinBoard(Number(boardId.value))
     ElMessage.success('已加入贴吧')
     fetchBoardDetail()
+    ElMessageBox.alert('欢迎加入「' + boardName + '」', '加入成功', {
+      confirmButtonText: '好的',
+      type: 'success',
+    }).catch(() => {})
   } catch (err) {
     ElMessage.error(err.message || '加入失败')
   } finally {

@@ -72,13 +72,16 @@ public class CommentService {
             }
         }
 
-        // 检查在该吧是否被禁言
+        // 检查在该吧是否被禁言或未加入
         if (post.getBoardId() != null) {
             UserBoardRelation rel = relationMapper.selectOne(
                     new LambdaQueryWrapper<UserBoardRelation>()
                             .eq(UserBoardRelation::getUserId, userId)
                             .eq(UserBoardRelation::getBoardId, post.getBoardId()));
-            if (rel != null && "MUTED".equals(rel.getBoardRole())) {
+            if (rel == null) {
+                throw new BusinessException(403, "REQUIRE_JOIN:请先加入该吧后再评论");
+            }
+            if ("MUTED".equals(rel.getBoardRole())) {
                 throw new BusinessException("您在该吧已被禁言，无法评论");
             }
         }

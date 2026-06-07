@@ -66,10 +66,8 @@ onMounted(() => fetchBoards())
     </div>
 
     <el-table :data="boards" v-loading="loading" stripe border style="margin-top:12px;">
-      <el-table-column prop="id" label="ID" width="70" />
       <el-table-column prop="name" label="吧名" min-width="150" />
       <el-table-column prop="description" label="描述" min-width="160" show-overflow-tooltip />
-      <el-table-column prop="creatorId" label="创建者ID" width="100" />
       <el-table-column label="状态" width="90">
         <template #default="{ row }">
           <el-tag v-if="row.status === 'ACTIVE'" type="success">正常</el-tag>

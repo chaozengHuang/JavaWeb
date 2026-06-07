@@ -23,6 +23,12 @@ public class UserService {
     @Autowired
     private UserMapper userMapper;
 
+    @Autowired
+    private NotificationService notificationService;
+
+    @Autowired
+    private MessageService messageService;
+
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     public void register(UserRegisterDTO dto) {
@@ -38,6 +44,14 @@ public class UserService {
         user.setUsername(dto.getUsername());
         user.setPassword(passwordEncoder.encode(dto.getPassword()));
         userMapper.insert(user);
+        // 发送欢迎消息
+        try {
+            Long notifierId = notificationService.getNotifyUserId();
+            if (notifierId != null) {
+                messageService.send(notifierId, user.getId(),
+                        dto.getUsername() + "你好，欢迎来到Nexus贴吧");
+            }
+        } catch (Exception ignored) {}
         log.info("新用户注册: {}", user.getUsername());
     }
 

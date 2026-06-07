@@ -278,8 +278,8 @@ const checkFriendStatus = async () => {
   if (!isOtherUser.value || !targetUserId.value) return
   try {
     const res = await isFriend(Number(targetUserId.value))
-    friendStatus.value = res.data?.isFriend || false
-  } catch { friendStatus.value = false }
+    friendStatus.value = res.data?.status || 'none'
+  } catch { friendStatus.value = 'none' }
 }
 
 const formatTime = (time) => {
@@ -344,17 +344,17 @@ onMounted(async () => {
             <div class="info-row"><strong>电话：</strong>{{ profile?.phone || '未设置' }}</div>
           </el-card>
           <el-card v-if="isOtherUser" shadow="hover" class="info-card">
-            <div style="display:flex;gap:8px;">
+            <div style="display:flex;gap:8px;align-items:center;">
               <el-button type="primary" @click="startConversation">发起对话</el-button>
               <el-button
-                v-if="!friendStatus"
+                v-if="friendStatus === 'none'"
                 type="success"
                 :loading="friendLoading"
                 @click="handleAddFriend"
-              >
-                {{ friendStatus === 'pending' ? '已发送请求' : '添加好友' }}
-              </el-button>
-              <el-tag v-else type="success">已是好友</el-tag>
+              >添加好友</el-button>
+              <el-tag v-else-if="friendStatus === 'pending_sent'" type="warning">等待对方通过</el-tag>
+              <el-tag v-else-if="friendStatus === 'pending_received'" type="info">对方已申请</el-tag>
+              <el-tag v-else-if="friendStatus === 'accepted'" type="success">已是好友</el-tag>
             </div>
           </el-card>
           <el-card shadow="hover" class="info-card stats-card">

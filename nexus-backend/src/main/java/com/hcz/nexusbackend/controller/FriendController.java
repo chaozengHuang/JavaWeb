@@ -61,8 +61,8 @@ public class FriendController {
     }
 
     @GetMapping("/status/{userId}")
-    public Result<Map<String, Object>> isFriend(@PathVariable Long userId) {
-        boolean isFriend = friendService.isFriend(userId);
-        return Result.success(Map.of("isFriend", isFriend));
+    public Result<Map<String, Object>> getFriendStatus(@PathVariable Long userId) {
+        String status = friendService.getFriendStatus(userId);
+        return Result.success(Map.of("status", status));
     }
 }

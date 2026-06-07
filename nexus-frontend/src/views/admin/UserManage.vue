@@ -168,7 +168,6 @@ onMounted(() => {
 
     <!-- 用户表格 -->
     <el-table v-loading="loading" :data="userList" border stripe style="width: 100%">
-      <el-table-column prop="id" label="ID" width="80" />
       <el-table-column prop="username" label="用户名" min-width="120" />
       <el-table-column prop="email" label="邮箱" min-width="160" />
       <el-table-column label="角色" width="100">
@@ -221,7 +220,6 @@ onMounted(() => {
     <el-dialog v-model="detailVisible" title="用户详情" width="500px">
       <template v-if="detailUser">
         <el-descriptions :column="2" border>
-          <el-descriptions-item label="ID">{{ detailUser.id }}</el-descriptions-item>
           <el-descriptions-item label="用户名">{{ detailUser.username }}</el-descriptions-item>
           <el-descriptions-item label="角色">
             <el-tag :type="detailUser.globalRole === 'SYS_ADMIN' ? 'danger' : 'info'" size="small">

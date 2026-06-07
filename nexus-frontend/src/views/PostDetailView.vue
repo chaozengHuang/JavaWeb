@@ -5,7 +5,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { getPostDetail, updatePost, deletePost } from '@/api/post'
 import { toggleLike, toggleFavorite, isLiked, isFavorited, recordBrowse } from '@/api/profile'
 import { getComments, createComment, deleteComment, acceptComment } from '@/api/comment'
-import { getMyRole } from '@/api/board'
+import { getMyRole, joinBoard } from '@/api/board'
 
 const route = useRoute()
 const router = useRouter()
@@ -126,7 +126,23 @@ const handleSubmitComment = async () => {
     fetchComments()
     post.value.commentCount = (post.value.commentCount || 0) + 1
   } catch (err) {
-    ElMessage.error(err.message || '评论失败')
+    const msg = err.message || '评论失败'
+    if (msg.includes('REQUIRE_JOIN')) {
+      ElMessageBox.confirm(
+        '请先加入该吧后再评论', '提示',
+        { confirmButtonText: '立即加入', cancelButtonText: '取消', type: 'warning' }
+      ).then(async () => {
+        try {
+          const boardId = post.value?.boardId
+          if (boardId) {
+            await joinBoard(boardId)
+            ElMessage.success('已加入贴吧，现在可以评论了')
+          }
+        } catch (e) { ElMessage.error(e.message || '加入失败') }
+      }).catch(() => {})
+    } else {
+      ElMessage.error(msg)
+    }
   } finally {
     commentSubmitting.value = false
   }

@@ -195,7 +195,6 @@ onMounted(() => {
       @selection-change="handleSelectionChange"
     >
       <el-table-column type="selection" width="50" />
-      <el-table-column prop="id" label="ID" width="70" />
       <el-table-column prop="title" label="标题" min-width="180" show-overflow-tooltip />
       <el-table-column prop="boardName" label="所属吧" width="120" show-overflow-tooltip />
       <el-table-column prop="authorName" label="作者" width="120" />
@@ -261,10 +260,7 @@ onMounted(() => {
     <el-dialog v-model="detailVisible" title="帖子详情" width="650px">
       <template v-if="detailPost">
         <el-descriptions :column="2" border>
-          <el-descriptions-item label="ID">{{ detailPost.id }}</el-descriptions-item>
-          <el-descriptions-item label="作者ID">{{ detailPost.authorId }}</el-descriptions-item>
           <el-descriptions-item label="标题" :span="2">{{ detailPost.title }}</el-descriptions-item>
-          <el-descriptions-item label="板块ID">{{ detailPost.boardId }}</el-descriptions-item>
           <el-descriptions-item label="类型">{{ detailPost.type }}</el-descriptions-item>
           <el-descriptions-item label="状态">
             <el-tag :type="statusType(detailPost.status)" size="small">

@@ -202,7 +202,6 @@ onMounted(() => {
       @selection-change="handleSelectionChange"
     >
       <el-table-column type="selection" width="50" />
-      <el-table-column prop="id" label="ID" width="70" />
       <el-table-column prop="content" label="内容" min-width="200" show-overflow-tooltip>
         <template #default="{ row }">{{ truncateContent(row.content) }}</template>
       </el-table-column>
@@ -264,10 +263,6 @@ onMounted(() => {
     <el-dialog v-model="detailVisible" title="评论详情" width="550px">
       <template v-if="detailComment">
         <el-descriptions :column="2" border>
-          <el-descriptions-item label="ID">{{ detailComment.id }}</el-descriptions-item>
-          <el-descriptions-item label="作者ID">{{ detailComment.authorId }}</el-descriptions-item>
-          <el-descriptions-item label="所属帖子ID">{{ detailComment.postId }}</el-descriptions-item>
-          <el-descriptions-item label="父评论ID">{{ detailComment.parentCommentId || '无' }}</el-descriptions-item>
           <el-descriptions-item label="状态">
             <el-tag :type="statusType(detailComment.status)" size="small">
               {{ statusLabel(detailComment.status) }}

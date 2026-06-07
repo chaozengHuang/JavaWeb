@@ -296,7 +296,6 @@ watch(activeTab, (tab) => {
       <el-tab-pane label="管理员" name="admins" v-if="isOwner">
         <p style="color:#909399;font-size:13px;">管理员拥有管理帖子和禁言用户的权限</p>
         <el-table :data="adminList" stripe v-loading="adminLoading">
-          <el-table-column prop="userId" label="用户ID" width="80" />
           <el-table-column prop="username" label="用户名" />
           <el-table-column label="操作" width="100">
             <template #default="{ row }">
@@ -311,8 +310,7 @@ watch(activeTab, (tab) => {
 
       <el-tab-pane label="成员管理" name="members">
         <el-table :data="memberList" stripe v-loading="memberLoading">
-          <el-table-column prop="userId" label="用户ID" width="80" />
-          <el-table-column prop="username" label="用户名" width="150" />
+          <el-table-column prop="username" label="用户名" min-width="120" />
           <el-table-column prop="boardRole" label="角色" width="100">
             <template #default="{ row }">
               <el-tag v-if="row.boardRole === 'OWNER'" type="danger" size="small">吧主</el-tag>
@@ -321,7 +319,8 @@ watch(activeTab, (tab) => {
               <el-tag v-else type="default" size="small">成员</el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="200">
+          <el-table-column prop="activityPoints" label="活跃度" width="80" />
+          <el-table-column label="操作" min-width="140">
             <template #default="{ row }">
               <template v-if="row.userId !== currentUserId">
                 <el-button
@@ -364,7 +363,6 @@ watch(activeTab, (tab) => {
         <div v-loading="trashLoading">
           <div v-if="trashPosts.length === 0" style="text-align:center;padding:20px;color:#909399;">没有被隐藏或删除的帖子</div>
           <el-table :data="trashPosts" stripe v-else>
-            <el-table-column prop="id" label="ID" width="60" />
             <el-table-column prop="title" label="标题" min-width="150" show-overflow-tooltip />
             <el-table-column prop="status" label="状态" width="80">
               <template #default="{ row }">
@@ -386,7 +384,6 @@ watch(activeTab, (tab) => {
         <div v-loading="trashCommentsLoading">
           <div v-if="trashComments.length === 0" style="text-align:center;padding:20px;color:#909399;">没有被删除的评论</div>
           <el-table :data="trashComments" stripe v-else>
-            <el-table-column prop="id" label="ID" width="60" />
             <el-table-column prop="content" label="评论内容" min-width="180" show-overflow-tooltip />
             <el-table-column prop="authorName" label="评论人" width="100" />
             <el-table-column prop="postTitle" label="所属帖子" width="140" show-overflow-tooltip />
@@ -403,7 +400,6 @@ watch(activeTab, (tab) => {
     <!-- 评论管理弹窗 -->
     <el-dialog v-model="commentDialogVisible" title="帖子评论管理" width="550px" append-to-body>
       <el-table :data="currentPostComments" stripe max-height="350">
-        <el-table-column prop="id" label="ID" width="60" />
         <el-table-column prop="content" label="内容" />
         <el-table-column prop="status" label="状态" width="70">
           <template #default="{ row }">
