@@ -359,6 +359,9 @@ body {
   cursor: pointer;
   border: 2px solid #e4e7ed;
   transition: border-color 0.2s;
+  background: #409eff !important;
+  color: #fff;
+  font-weight: 600;
 }
 
 .user-avatar-btn:hover {

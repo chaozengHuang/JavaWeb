@@ -170,6 +170,10 @@ const getPeerAvatar = () => {
   return chats.value.find(c => c.userId === activeUserId.value)?.avatar || null
 }
 
+const getPeerUsername = () => {
+  return chats.value.find(c => c.userId === activeUserId.value)?.username || null
+}
+
 onMounted(async () => {
   window.__onChatMessage = (msg) => {
     if (msg.type === 'new_message' || msg.type === 'message_sent') {
@@ -226,7 +230,9 @@ watch(() => route.params.userId, (newVal) => {
             :message="msg"
             :is-mine="msg.senderId === currentUser.id"
             :my-avatar="currentUser.avatar"
+            :my-username="currentUser.username"
             :user-avatar="getPeerAvatar()"
+            :peer-username="getPeerUsername()"
             @retry="retryMessage"
           />
           <div v-if="messages.length === 0 && !loading" class="chat-empty">暂无消息，发送第一条消息吧</div>

@@ -5,7 +5,9 @@ const props = defineProps({
   message: { type: Object, required: true },
   isMine: { type: Boolean, default: false },
   myAvatar: { type: String, default: null },
+  myUsername: { type: String, default: null },
   userAvatar: { type: String, default: null },
+  peerUsername: { type: String, default: null },
 })
 const emit = defineEmits(['retry'])
 const router = useRouter()
@@ -14,9 +16,12 @@ const router = useRouter()
 <template>
   <div :class="['chat-message', isMine ? 'chat-message--mine' : 'chat-message--other']">
     <img v-if="isMine && props.myAvatar" :src="'http://localhost:8081' + props.myAvatar" class="chat-message__avatar clickable" @click="router.push('/profile')" />
+    <div v-else-if="isMine && !props.myAvatar" class="chat-message__avatar clickable" @click="router.push('/profile')">
+      {{ (myUsername || '').toString().charAt(0) }}
+    </div>
     <img v-else-if="!isMine && props.userAvatar" :src="'http://localhost:8081' + props.userAvatar" class="chat-message__avatar clickable" @click="router.push('/user/' + message.senderId)" />
     <div v-else class="chat-message__avatar clickable" @click="router.push('/user/' + message.senderId)">
-      {{ isMine ? '我' : (message.senderId || '').toString().slice(-2) }}
+      {{ (peerUsername || message.senderId || '').toString().charAt(0) }}
     </div>
     <div class="chat-message__body">
       <div class="chat-message__content">
@@ -66,7 +71,8 @@ const router = useRouter()
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: 14px;
+  font-weight: 600;
   flex-shrink: 0;
   object-fit: cover;
 }
@@ -76,7 +82,8 @@ const router = useRouter()
 }
 
 .chat-message--other .chat-message__avatar {
-  background: #67c23a;
+  background: #409eff;
+  font-weight: 600;
 }
 
 .chat-message__body {

@@ -680,4 +680,11 @@ onMounted(() => {
   padding: 16px;
   justify-content: center;
 }
+
+:deep(.board-detail-header .el-avatar) {
+  background: #409eff;
+  color: #fff;
+  font-weight: 600;
+  font-size: 22px;
+}
 </style>
