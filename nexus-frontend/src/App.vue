@@ -4,6 +4,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { getUnreadCount } from '@/api/message'
 import { getCheckInStatus, checkIn } from '@/api/points'
 import { getPendingCount } from '@/api/friend'
+import { getUserInfo } from '@/api/user'
 import { ElMessage } from 'element-plus'
 
 const router = useRouter()
@@ -17,6 +18,7 @@ const checkInLoading = ref(false)
 let ws = null
 let wsReconnectTimer = null
 let unreadTimer = null
+let pointsUpdateHandler = null
 
 const isAdmin = computed(() => {
   return user.value?.globalRole === 'SYS_ADMIN'
@@ -55,6 +57,20 @@ const loadUser = () => {
       user.value = null
     }
   }
+}
+
+// 从后端获取最新用户信息
+const fetchUserInfo = async () => {
+  try {
+    const res = await getUserInfo()
+    if (res.data) {
+      user.value = res.data
+      // 更新 localStorage
+      const stored = JSON.parse(localStorage.getItem('user') || '{}')
+      stored.user = res.data
+      localStorage.setItem('user', JSON.stringify(stored))
+    }
+  } catch { /* ignore */ }
 }
 
 const fetchUnreadCount = async () => {
@@ -180,6 +196,7 @@ const onLoginSuccess = () => {
 
 onMounted(() => {
   loadUser()
+  fetchUserInfo() // 获取最新用户信息
   connectWebSocket()
   fetchUnreadCount()
   fetchCheckInStatus()
@@ -189,11 +206,19 @@ onMounted(() => {
     fetchCheckInStatus()
     fetchFriendReqCount()
   }, 10000)
+  // 监听积分更新事件
+  pointsUpdateHandler = () => {
+    fetchUserInfo()
+  }
+  window.addEventListener('points-updated', pointsUpdateHandler)
 })
 
 onUnmounted(() => {
   disconnectWebSocket()
   if (unreadTimer) clearInterval(unreadTimer)
+  if (pointsUpdateHandler) {
+    window.removeEventListener('points-updated', pointsUpdateHandler)
+  }
 })
 
 defineExpose({ user, loadUser })

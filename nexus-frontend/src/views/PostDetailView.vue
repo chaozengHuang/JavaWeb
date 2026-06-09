@@ -173,6 +173,8 @@ const handleAcceptComment = async (commentId) => {
     ElMessage.success('采纳成功，积分已转移')
     fetchPost()
     fetchComments()
+    // 通知 App.vue 获取最新积分
+    window.dispatchEvent(new CustomEvent('points-updated'))
   } catch (err) {
     ElMessage.error(err.message || '采纳失败')
   }
