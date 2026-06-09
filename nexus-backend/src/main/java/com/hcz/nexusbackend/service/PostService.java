@@ -235,6 +235,15 @@ public class PostService {
             throw new BusinessException(403, "无权删除");
         }
 
+        // 如果是悬赏帖且积分未被领取，返还积分
+        if ("REWARD".equals(post.getType()) && post.getRewardPoints() != null && post.getRewardPoints() > 0) {
+            User author = userMapper.selectById(post.getAuthorId());
+            if (author != null) {
+                author.setPoints((author.getPoints() != null ? author.getPoints() : 0) + post.getRewardPoints());
+                userMapper.updateById(author);
+            }
+        }
+
         Post update = new Post();
         update.setId(id);
         update.setStatus("DELETED");

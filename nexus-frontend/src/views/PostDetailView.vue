@@ -201,8 +201,20 @@ const handleEdit = async () => {
 const handleDelete = async () => {
   try {
     await ElMessageBox.confirm('确定删除这篇帖子吗？', '提示', { type: 'warning' })
+    const postToDelete = post.value
     await deletePost(postId.value)
     ElMessage.success('删除成功')
+    // 乐观更新：删除悬赏帖时立即返还积分
+    if (postToDelete?.type === 'REWARD' && postToDelete?.rewardPoints > 0) {
+      const stored = JSON.parse(localStorage.getItem('user') || '{}')
+      if (stored.user && stored.user.points != null) {
+        stored.user.points += postToDelete.rewardPoints
+        localStorage.setItem('user', JSON.stringify(stored))
+        window.dispatchEvent(new CustomEvent('points-updated', {
+          detail: { points: stored.user.points }
+        }))
+      }
+    }
     router.push('/forum')
   } catch (err) {
     if (err !== 'cancel') {

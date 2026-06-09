@@ -43,6 +43,8 @@ const handleCheckIn = async () => {
       stored.user.points = data.totalPoints
       localStorage.setItem('user', JSON.stringify(stored))
     }
+    // 触发事件通知 App.vue 更新顶部栏积分
+    window.dispatchEvent(new CustomEvent('points-updated', { detail: { points: data.totalPoints } }))
     loadCheckInStatus()
   } catch (err) {
     ElMessage.error(err.message || '签到失败')
@@ -66,6 +68,8 @@ const handleRecharge = async () => {
       stored.user.points = data.totalPoints
       localStorage.setItem('user', JSON.stringify(stored))
     }
+    // 触发事件通知 App.vue 更新顶部栏积分
+    window.dispatchEvent(new CustomEvent('points-updated', { detail: { points: data.totalPoints } }))
     loadRechargeRecords()
   } catch (err) {
     ElMessage.error(err.message || '充值失败')
