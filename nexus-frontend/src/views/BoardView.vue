@@ -144,6 +144,17 @@ const handleCreate = async () => {
     dialogVisible.value = false
     fetchPosts()
     fetchBoardDetail()
+    // 乐观更新：发悬赏帖扣除积分
+    if (createForm.value.type === 'REWARD' && createForm.value.rewardPoints > 0) {
+      const stored = JSON.parse(localStorage.getItem('user') || '{}')
+      if (stored.user && stored.user.points != null) {
+        stored.user.points -= createForm.value.rewardPoints
+        localStorage.setItem('user', JSON.stringify(stored))
+        window.dispatchEvent(new CustomEvent('points-updated', {
+          detail: { points: stored.user.points }
+        }))
+      }
+    }
   } catch (error) {
     const msg = error.message || '发帖失败'
     if (msg.includes('REQUIRE_JOIN')) {
@@ -201,9 +212,21 @@ const handleShowPost = async (postId) => {
 const handleDeletePost = async (postId) => {
   try {
     await ElMessageBox.confirm('确定删除这条帖子吗？', '提示', { type: 'warning' })
+    const postToDelete = posts.value.find(p => p.id === postId)
     await deleteBoardPost(Number(boardId.value), postId)
     ElMessage.success('已删除帖子')
     fetchPosts()
+    // 乐观更新：删除悬赏帖时立即返还积分
+    if (postToDelete?.type === 'REWARD' && postToDelete?.rewardPoints > 0) {
+      const stored = JSON.parse(localStorage.getItem('user') || '{}')
+      if (stored.user && stored.user.points != null) {
+        stored.user.points += postToDelete.rewardPoints
+        localStorage.setItem('user', JSON.stringify(stored))
+        window.dispatchEvent(new CustomEvent('points-updated', {
+          detail: { points: stored.user.points }
+        }))
+      }
+    }
   } catch (err) {
     if (err !== 'cancel') {
       ElMessage.error(err.message || '操作失败')
@@ -318,7 +341,7 @@ onMounted(() => {
     <!-- 吧信息卡片 -->
     <div v-if="boardDetail" class="board-info-card">
       <div class="board-info-header">
-        <div style="display:flex;align-items:center;gap:14px;">
+        <div class="board-detail-header">
           <el-avatar :size="56" :src="boardDetail.board?.avatar ? 'http://localhost:8081' + boardDetail.board.avatar : ''" shape="square">
             {{ boardDetail.board?.name?.charAt(0) || '吧' }}
           </el-avatar>
@@ -340,12 +363,10 @@ onMounted(() => {
         </span>
         <span v-if="boardDetail.admins?.length">
           管理员：
-          <a
-            v-for="admin in boardDetail.admins"
-            :key="admin.userId"
-            class="link-user"
-            @click="goToUserProfile(admin.userId)"
-          >{{ admin.username }} </a>
+          <template v-for="(admin, idx) in boardDetail.admins" :key="admin.userId">
+            <a class="link-user" @click="goToUserProfile(admin.userId)">{{ admin.username }}</a>
+            <span v-if="idx < boardDetail.admins.length - 1" style="color:#909399">、</span>
+          </template>
         </span>
         <span>帖子：{{ boardDetail.postCount }}</span>
         <span>成员：{{ boardDetail.memberCount }}</span>
@@ -404,6 +425,18 @@ onMounted(() => {
                   <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2v10z" stroke="currentColor" stroke-width="1.5"/>
                 </svg>
                 {{ post.commentCount || 0 }}
+              </span>
+              <span class="stat">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                  <path d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3H14z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" :fill="post.isLiked ? 'currentColor' : 'none'"/>
+                </svg>
+                {{ post.likeCount || 0 }}
+              </span>
+              <span class="stat">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 21l-1.45-1.32C5.43 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.43 6.86-8.55 11.18L12 21z" :fill="post.isFavorited ? '#409eff' : 'none'" :stroke="post.isFavorited ? '#409eff' : 'currentColor'" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                {{ post.favoriteCount || 0 }}
               </span>
             </div>
             <!-- 吧管理按钮 -->
@@ -698,6 +731,6 @@ onMounted(() => {
   background: #409eff;
   color: #fff;
   font-weight: 600;
-  font-size: 22px;
+  font-size: 19px;
 }
 </style>
