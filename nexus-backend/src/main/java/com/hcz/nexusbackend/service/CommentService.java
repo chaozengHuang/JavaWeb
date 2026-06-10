@@ -45,12 +45,15 @@ public class CommentService {
     @Autowired
     private MessageService messageService;
 
-    private void sendReplyNotify(Long senderId, Long receiverId, String content) {
+    private void sendReplyNotify(Long senderId, Long receiverId, Long postId, Long parentCommentId) {
         try {
             Long notifierId = notificationService.getNotifyUserId();
-            if (notifierId != null && !senderId.equals(receiverId)) {
-                messageService.send(notifierId, receiverId, "有人回复了您的评论：" + (content.length() > 30 ? content.substring(0, 30) + "..." : content));
-            }
+            if (notifierId == null || senderId.equals(receiverId)) return;
+            User sender = userMapper.selectById(senderId);
+            String senderName = sender != null ? sender.getUsername() : "有人";
+            String link = "/post/" + postId;
+            if (parentCommentId != null) link += "?comment=" + parentCommentId;
+            messageService.send(notifierId, receiverId, senderName + " 回复了您的评论，点击查看：" + link);
         } catch (Exception ignored) {}
     }
 
@@ -94,15 +97,13 @@ public class CommentService {
         comment.setIsAccepted(0);
         comment.setStatus("ACTIVE");
         commentMapper.insert(comment);
-        // 如果是楼中楼回复，通知被回复人；否则通知帖子作者
         if (dto.getParentCommentId() != null) {
             Comment parent = commentMapper.selectById(dto.getParentCommentId());
             if (parent != null) {
-                sendReplyNotify(userId, parent.getAuthorId(), dto.getContent());
+                sendReplyNotify(userId, parent.getAuthorId(), post.getId(), dto.getParentCommentId());
             }
         } else {
-            // 直接回复帖子：通知帖子作者
-            sendReplyNotify(userId, post.getAuthorId(), dto.getContent());
+            sendReplyNotify(userId, post.getAuthorId(), post.getId(), null);
         }
         // 评论+2活跃度
         Long boardId = post.getBoardId();

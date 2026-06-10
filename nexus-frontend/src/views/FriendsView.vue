@@ -109,7 +109,7 @@ onMounted(() => {
             </div>
             <div class="friend-actions">
               <el-button size="small" @click="startChat(f.userId)">发消息</el-button>
-              <el-button size="small" type="danger" text @click="handleDelete(f.userId)" v-if="f.globalRole !== 'NOTIFY_ADMIN'">删除</el-button>
+              <el-button size="small" type="danger" text @click="handleDelete(f.userId)" v-if="f.globalRole !== 'NOTIFY_ADMIN' && !f.isSelf">删除</el-button>
             </div>
           </el-card>
         </div>

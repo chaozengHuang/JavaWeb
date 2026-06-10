@@ -7,6 +7,17 @@ export const updateBio = (bio) => request.put('/api/profile/bio', { bio })
 
 export const updateProfile = (fields) => request.put('/api/profile', fields)
 
+export const uploadBackground = (file) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request.post('/api/profile/background', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+}
+
+export const setDefaultBackground = (bgName) =>
+  request.put('/api/profile/background/default', { bgName })
+
 export const uploadAvatar = (file) => {
   const formData = new FormData()
   formData.append('file', file)

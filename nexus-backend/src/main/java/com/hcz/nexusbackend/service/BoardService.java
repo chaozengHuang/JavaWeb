@@ -401,7 +401,10 @@ public class BoardService {
                         .eq(UserBoardRelation::getBoardId, boardId)
                         .in(UserBoardRelation::getBoardRole, List.of("OWNER", "ADMIN")));
         for (UserBoardRelation m : managers) {
-            sendSystemNotification(m.getUserId(), joinerName + " 加入了贴吧「" + board.getName() + "」");
+            User mgr = userMapper.selectById(m.getUserId());
+            if (mgr != null && !"SYS_ADMIN".equals(mgr.getGlobalRole())) {
+                sendSystemNotification(m.getUserId(), joinerName + " 加入了贴吧「" + board.getName() + "」");
+            }
         }
 
         log.info("用户 {} 加入了贴吧 {}", userId, boardId);
@@ -421,6 +424,22 @@ public class BoardService {
             throw new BusinessException("吧主不能退出，请先转让吧主或删除贴吧");
         }
         relationMapper.deleteById(existing.getId());
+        // 通知吧主和管理员：成员退出
+        User leaver = userMapper.selectById(userId);
+        String leaverName = leaver != null ? leaver.getUsername() : "未知用户";
+        Board board = boardMapper.selectById(boardId);
+        String boardName = board != null ? board.getName() : "未知吧";
+        List<UserBoardRelation> managers = relationMapper.selectList(
+                new LambdaQueryWrapper<UserBoardRelation>()
+                        .eq(UserBoardRelation::getBoardId, boardId)
+                        .in(UserBoardRelation::getBoardRole, List.of("OWNER", "ADMIN")));
+        for (UserBoardRelation m : managers) {
+            // 过滤系统管理员（用户自己退出时也过滤掉自己）
+            User mgr = userMapper.selectById(m.getUserId());
+            if (mgr != null && !"SYS_ADMIN".equals(mgr.getGlobalRole())) {
+                sendSystemNotification(m.getUserId(), leaverName + " 退出了贴吧「" + boardName + "」");
+            }
+        }
         log.info("用户 {} 离开了贴吧 {}", userId, boardId);
     }
 

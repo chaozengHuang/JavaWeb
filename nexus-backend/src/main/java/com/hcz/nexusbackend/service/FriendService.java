@@ -177,12 +177,25 @@ public class FriendService {
 
     public List<Map<String, Object>> getFriendList() {
         Long userId = getCurrentUserId();
-        // 确保系统管理员始终在好友列表中
         ensureAdminFriends(userId);
         List<FriendRelation> relations = friendRelationMapper.selectAcceptedFriends(userId);
 
         Set<Long> seen = new HashSet<>();
+        // 自己始终是好友列表第一位
+        User self = userMapper.selectById(userId);
         List<Map<String, Object>> friends = new ArrayList<>();
+        if (self != null) {
+            Map<String, Object> selfItem = new LinkedHashMap<>();
+            selfItem.put("relationId", 0L);
+            selfItem.put("userId", self.getId());
+            selfItem.put("username", self.getUsername());
+            selfItem.put("avatar", self.getAvatar());
+            selfItem.put("globalRole", self.getGlobalRole());
+            selfItem.put("online", true);
+            selfItem.put("isSelf", true);
+            friends.add(selfItem);
+            seen.add(userId);
+        }
         for (FriendRelation fr : relations) {
             Long friendId = fr.getUserId().equals(userId) ? fr.getFriendId() : fr.getUserId();
             if (!seen.add(friendId)) continue; // 防止双向记录导致重复

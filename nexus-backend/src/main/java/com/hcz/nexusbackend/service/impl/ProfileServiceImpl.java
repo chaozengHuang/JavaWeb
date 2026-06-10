@@ -102,6 +102,20 @@ public class ProfileServiceImpl implements ProfileService {
         int postCount = Math.toIntExact(postMapper.selectCount(
                 new LambdaQueryWrapper<Post>().eq(Post::getAuthorId, userId).ne(Post::getStatus, "DELETED")));
 
+        // 该用户加入的贴吧
+        List<UserBoardRelation> rels = boardRelationMapper.selectList(
+                new LambdaQueryWrapper<UserBoardRelation>().eq(UserBoardRelation::getUserId, userId));
+        List<Map<String, Object>> boards = new ArrayList<>();
+        for (UserBoardRelation rel : rels) {
+            Board b = boardMapper.selectById(rel.getBoardId());
+            if (b == null || "DELETED".equals(b.getStatus())) continue;
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("boardId", b.getId()); item.put("boardName", b.getName());
+            item.put("boardAvatar", b.getAvatar()); item.put("boardRole", rel.getBoardRole());
+            item.put("activityPoints", rel.getActivityPoints() != null ? rel.getActivityPoints() : 0);
+            boards.add(item);
+        }
+
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("user", user);
         result.put("stats", Map.of(
@@ -109,6 +123,7 @@ public class ProfileServiceImpl implements ProfileService {
                 "likeCount", 0,
                 "postCount", postCount
         ));
+        result.put("boards", boards);
         return result;
     }
 
@@ -149,27 +164,18 @@ public class ProfileServiceImpl implements ProfileService {
         }
         String fileName = "avatar_" + userId + "_" + UUID.randomUUID().toString().substring(0, 8) + ext;
 
-        // 使用绝对路径
-        File dir = new File(uploadDir + "/avatars");
-        if (!dir.exists()) {
-            boolean created = dir.mkdirs();
-            if (!created) {
-                log.error("创建头像目录失败: {}", dir.getAbsolutePath());
-                throw new BusinessException("头像上传失败：无法创建目录");
-            }
-        }
-        log.info("头像上传目录: {}", dir.getAbsolutePath());
+        File dir = new File(uploadDir + "/images");
+        if (!dir.exists()) dir.mkdirs();
 
         File destFile = new File(dir, fileName);
         try {
             file.transferTo(destFile);
-            log.info("头像文件保存成功: {}", destFile.getAbsolutePath());
         } catch (IOException e) {
-            log.error("头像上传失败, dest={}", destFile.getAbsolutePath(), e);
+            log.error("头像上传失败", e);
             throw new BusinessException("头像上传失败: " + e.getMessage());
         }
 
-        String avatarUrl = "/uploads/avatars/" + fileName;
+        String avatarUrl = "/uploads/images/" + fileName;
         User user = new User();
         user.setId(userId);
         user.setAvatar(avatarUrl);
@@ -177,6 +183,35 @@ public class ProfileServiceImpl implements ProfileService {
 
         log.info("用户 {} 更新头像: {}", userId, avatarUrl);
         return avatarUrl;
+    }
+
+    @Override
+    public String uploadBackground(MultipartFile file) {
+        Long userId = getCurrentUserId();
+        if (file.isEmpty()) throw new BusinessException("文件不能为空");
+        String originalName = file.getOriginalFilename();
+        String ext = "";
+        if (originalName != null && originalName.contains(".")) {
+            ext = originalName.substring(originalName.lastIndexOf("."));
+        }
+        String fileName = "bg_" + userId + "_" + UUID.randomUUID().toString().substring(0, 8) + ext;
+        File dir = new File(uploadDir + "/images");
+        if (!dir.exists()) dir.mkdirs();
+        try { file.transferTo(new File(dir, fileName)); }
+        catch (IOException e) { throw new BusinessException("背景上传失败"); }
+        String url = "/uploads/images/" + fileName;
+        User user = new User(); user.setId(userId); user.setBackground(url);
+        userMapper.updateById(user);
+        return url;
+    }
+
+    @Override
+    public String setDefaultBackground(String bgName) {
+        Long userId = getCurrentUserId();
+        String url = "/uploads/images/" + bgName;
+        User user = new User(); user.setId(userId); user.setBackground(url);
+        userMapper.updateById(user);
+        return url;
     }
 
     // ==================== 收藏 ====================

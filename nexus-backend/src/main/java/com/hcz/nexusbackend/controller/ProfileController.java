@@ -53,6 +53,16 @@ public class ProfileController {
         return Result.success("上传成功", url);
     }
 
+    @PostMapping("/background")
+    public Result<String> uploadBackground(@RequestParam("file") MultipartFile file) {
+        return Result.success("上传成功", profileService.uploadBackground(file));
+    }
+
+    @PutMapping("/background/default")
+    public Result<String> setDefaultBackground(@RequestBody Map<String, String> body) {
+        return Result.success("设置成功", profileService.setDefaultBackground(body.get("bgName")));
+    }
+
     // ==================== 收藏 ====================
 
     @PostMapping("/favorites/{postId}")

@@ -3,6 +3,7 @@ import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getHistory, markAsRead, getChatList } from '@/api/message'
+import { uploadImage, uploadFile } from '@/api/upload'
 import ChatList from '@/components/ChatList.vue'
 import ChatMessage from '@/components/ChatMessage.vue'
 
@@ -15,6 +16,8 @@ const activeUserId = ref(null)
 const inputText = ref('')
 const messagesContainer = ref(null)
 const loading = ref(false)
+const showEmoji = ref(false)
+const emojis = ['😀','😃','😄','😁','😅','😂','🤣','😊','😇','🙂','😉','😌','😍','🥰','😘','😗','😋','😛','😜','🤪','😝','🤑','🤗','🤭','🤫','🤔','🤐','😏','😒','😔','😕','🙁','☹️','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','💀','☠️','👍','👎','👏','🙌','💪','🤝','🎉','🎊','❤️','🔥','⭐','✅','❌','💯']
 
 const currentUser = computed(() => {
   const stored = localStorage.getItem('user')
@@ -142,6 +145,24 @@ const retryMessage = (msg) => {
   sendMessage(msg.content)
 }
 
+const handleChatImage = async (e) => {
+  const file = e.target.files?.[0]
+  if (!file) return
+  if (!file.type.startsWith('image/')) { ElMessage.warning('请选择图片文件'); return }
+  try {
+    const res = await uploadImage(file)
+    const url = res.data?.url || ''
+    const msgText = `![图片](${url})`
+    sendMessage(msgText)
+  } catch (err) { ElMessage.error('图片上传失败') }
+  e.target.value = ''
+}
+
+const handleChatFile = async (e) => {
+  e.target.value = ''
+  ElMessage.info('文件发送功能正在开发中，敬请期待')
+}
+
 const appendMessage = (msg) => {
   const relatedUserId = msg.senderId === currentUser.value.id ? msg.receiverId : msg.senderId
   if (activeUserId.value === relatedUserId || activeUserId.value === msg.senderId) {
@@ -238,16 +259,42 @@ watch(() => route.params.userId, (newVal) => {
           <div v-if="messages.length === 0 && !loading" class="chat-empty">暂无消息，发送第一条消息吧</div>
         </div>
         <div class="chat-input-area">
-          <el-input
-            v-model="inputText"
-            type="textarea"
-            :rows="3"
-            placeholder="输入消息..."
-            resize="none"
-            @keyup.enter.exact="sendMessage"
-          />
-          <el-button type="primary" @click="sendMessage" :disabled="!inputText.trim()">发送</el-button>
+          <div class="chat-input-left">
+            <div class="chat-toolbar">
+              <label class="chat-tool-btn" title="发送图片">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.5"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path d="M21 15l-5-5L5 21h16v-6z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+                <input type="file" accept="image/*" @change="handleChatImage" />
+              </label>
+              <label class="chat-tool-btn" title="发送文件">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z" stroke="currentColor" stroke-width="1.5"/><path d="M13 2v7h7" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+                <input type="file" @change="handleChatFile" />
+              </label>
+              <button class="chat-tool-btn" :class="{ active: showEmoji }" title="表情" @click="showEmoji = !showEmoji">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"/><path d="M8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+              </button>
+            </div>
+            <el-input
+              v-model="inputText"
+              type="textarea"
+              :rows="2"
+              placeholder="输入消息..."
+              resize="none"
+              class="chat-textarea"
+              @keyup.enter.exact="sendMessage"
+            />
+          </div>
+          <el-button type="primary" class="chat-send-btn" @click="sendMessage" :disabled="!inputText.trim()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </el-button>
         </div>
+        <!-- 表情面板 -->
+        <transition name="emoji-fade">
+          <div v-if="showEmoji" class="emoji-panel">
+            <div class="emoji-grid">
+              <button v-for="e in emojis" :key="e" class="emoji-item" @click="inputText += e; showEmoji = false">{{ e }}</button>
+            </div>
+          </div>
+        </transition>
       </template>
     </div>
   </div>
@@ -284,9 +331,47 @@ watch(() => route.params.userId, (newVal) => {
 .chat-empty { margin: auto; color: #909399; font-size: 14px; }
 
 .chat-input-area {
-  padding: 12px 20px; border-top: 1px solid #e4e7ed;
-  display: flex; gap: 12px; align-items: flex-end;
+  padding: 10px 16px; border-top: 1px solid #e4e7ed;
+  display: flex; gap: 10px; align-items: flex-end;
+  background: #fafafa;
 }
 
-.chat-input-area :deep(.el-textarea__inner) { resize: none; }
+.chat-input-left { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+
+.chat-toolbar { display: flex; gap: 4px; padding-left: 2px; }
+
+.chat-tool-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; border: none; border-radius: 8px;
+  background: transparent; color: #909399; cursor: pointer;
+  transition: all 0.15s; position: relative;
+}
+.chat-tool-btn:hover { background: #e8e8e8; color: #606266; }
+.chat-tool-btn.active { background: #ecf5ff; color: #409eff; }
+.chat-tool-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
+.chat-textarea :deep(.el-textarea__inner) {
+  background: #fff; border-radius: 10px; border-color: #e4e7ed;
+  padding: 8px 12px; font-size: 14px; transition: border-color 0.2s; resize: none;
+}
+.chat-textarea :deep(.el-textarea__inner):focus { border-color: #409eff; }
+
+.chat-send-btn {
+  width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; padding: 0;
+}
+
+.emoji-panel {
+  background: #fff; border-top: 1px solid #e4e7ed;
+  padding: 10px 14px; max-height: 200px; overflow-y: auto;
+}
+.emoji-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 4px; }
+.emoji-item {
+  width: 100%; aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+  font-size: 20px; cursor: pointer; border: none; background: transparent;
+  border-radius: 8px; transition: background 0.12s;
+}
+.emoji-item:hover { background: #f0f0f0; transform: scale(1.15); }
+.emoji-fade-enter-active, .emoji-fade-leave-active { transition: all 0.2s ease; }
+.emoji-fade-enter-from, .emoji-fade-leave-to { opacity: 0; max-height: 0; padding-top: 0; padding-bottom: 0; }
 </style>

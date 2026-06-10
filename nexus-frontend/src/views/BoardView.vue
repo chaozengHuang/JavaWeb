@@ -3,6 +3,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getBoardDetail, hidePost, showPost, deleteBoardPost, getMyRole, joinBoard, leaveBoard, getLeaderboard } from '@/api/board'
 import { getPostList, createPost, setPin, setFeature } from '@/api/post'
+import { uploadImage } from '@/api/upload'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import BoardManage from '@/components/BoardManage.vue'
 
@@ -46,6 +47,9 @@ const createForm = ref({
   type: 'NORMAL',
   rewardPoints: 0,
 })
+const postImages = ref([])
+const imageUploading = ref(false)
+const postEmojis = ['😀','😃','😄','😁','😂','🤣','😊','😇','🙂','😉','😍','🥰','😘','😋','😜','🤪','😝','😏','😒','😔','😢','😭','😤','😡','🤬','👍','👎','👏','🙌','💪','❤️','🔥','⭐','✅','❌','💯']
 
 const currentUserId = computed(() => {
   const stored = localStorage.getItem('user')
@@ -111,7 +115,24 @@ const goBack = () => {
 
 const openCreateDialog = () => {
   createForm.value = { title: '', content: '', type: 'NORMAL', rewardPoints: 0 }
+  postImages.value = []
   dialogVisible.value = true
+}
+
+const handlePostImageUpload = async (e) => {
+  const file = e.target.files?.[0]
+  if (!file) return
+  if (!file.type.startsWith('image/')) { ElMessage.warning('请选择图片文件'); return }
+  if (file.size > 5 * 1024 * 1024) { ElMessage.warning('图片大小不能超过 5MB'); return }
+  imageUploading.value = true
+  try {
+    const res = await uploadImage(file)
+    const url = res.data?.url || ''
+    postImages.value.push(url)
+    // 插入 Markdown 图片到内容
+    createForm.value.content += `\n![图片](${url})\n`
+  } catch (err) { ElMessage.error('图片上传失败') }
+  finally { imageUploading.value = false }
 }
 
 const handleCreate = async () => {
@@ -495,11 +516,31 @@ onMounted(() => {
           <el-input-number v-model="createForm.rewardPoints" :min="1" :max="9999" />
         </el-form-item>
         <el-form-item label="帖子内容">
+          <div class="editor-toolbar">
+            <label class="toolbar-btn" title="插入图片">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.5"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path d="M21 15l-5-5L5 21h16v-6z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+              <span>图片</span>
+              <input type="file" accept="image/*" @change="handlePostImageUpload" />
+            </label>
+            <el-popover placement="bottom" :width="300" trigger="click" popper-class="emoji-popover">
+              <template #reference>
+                <button class="toolbar-btn" type="button" title="表情">😊 <span>表情</span></button>
+              </template>
+              <div class="emoji-grid-popup">
+                <button v-for="e in postEmojis" :key="e" class="emoji-chip" type="button" @click="createForm.content += e">{{ e }}</button>
+              </div>
+            </el-popover>
+            <span v-if="imageUploading" class="uploading-tip">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="spin"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-dasharray="31.4 31.4" stroke-linecap="round"/></svg>
+              上传中...
+            </span>
+            <span v-else class="toolbar-hint">支持图片和表情，图片使用 Markdown 格式</span>
+          </div>
           <el-input
             v-model="createForm.content"
             type="textarea"
-            placeholder="请输入内容"
-            :rows="6"
+            placeholder="请输入内容..."
+            :rows="8"
           />
         </el-form-item>
       </el-form>
@@ -733,4 +774,78 @@ onMounted(() => {
   font-weight: 600;
   font-size: 19px;
 }
+
+/* editor toolbar */
+.editor-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f0f0;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+
+.toolbar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #606266;
+  cursor: pointer;
+  transition: all 0.15s;
+  user-select: none;
+  border: 1px solid #e4e7ed;
+  background: #fff;
+}
+
+.toolbar-btn:hover {
+  color: #409eff;
+  border-color: #c6e2ff;
+  background: #ecf5ff;
+}
+
+.toolbar-btn input { display: none; }
+
+.uploading-tip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #409eff;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.toolbar-hint {
+  font-size: 12px;
+  color: #c0c4cc;
+  margin-left: auto;
+}
+
+.toolbar-hint code {
+  background: #f5f7fa;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 11px;
+}
+</style>
+
+<style>
+.emoji-popover { padding: 4px !important; }
+.emoji-grid-popup { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; padding: 6px; }
+.emoji-chip {
+  width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+  font-size: 18px; cursor: pointer; border: none; background: transparent; border-radius: 6px;
+  transition: background 0.12s;
+}
+.emoji-chip:hover { background: #f0f0f0; transform: scale(1.2); }
 </style>

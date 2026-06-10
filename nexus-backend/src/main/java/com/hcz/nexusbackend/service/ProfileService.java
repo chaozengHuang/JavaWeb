@@ -18,6 +18,10 @@ public interface ProfileService {
 
     String uploadAvatar(MultipartFile file);
 
+    String uploadBackground(MultipartFile file);
+
+    String setDefaultBackground(String bgName);
+
     // 收藏
     void toggleFavorite(Long postId);
 

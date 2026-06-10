@@ -56,7 +56,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         Long receiverId = Long.valueOf(payload.get("receiverId").toString());
         String content = (String) payload.get("content");
 
-        // 检查是否为好友
+        // 检查是否为好友（自己是自己的好友，跳过限制）
         Long friendCount = friendRelationMapper.selectCount(
                 new LambdaQueryWrapper<FriendRelation>()
                         .eq(FriendRelation::getUserId, senderId)

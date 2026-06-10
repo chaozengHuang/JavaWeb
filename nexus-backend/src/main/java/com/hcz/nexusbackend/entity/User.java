@@ -27,6 +27,7 @@ public class User {
     private String status;
     private String avatar;
     private String bio;
+    private String background;
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
