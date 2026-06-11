@@ -1,6 +1,6 @@
 package com.hcz.nexusbackend.config;
 
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.lang.NonNull;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
@@ -11,16 +11,14 @@ import java.io.File;
 @Configuration
 public class FileUploadConfig implements WebMvcConfigurer {
 
-    @Value("${file.upload.dir:uploads}")
-    private String uploadDir;
+    @Autowired
+    private FileStorageConfig fileStorageConfig;
 
     @Override
     public void addResourceHandlers(@NonNull ResourceHandlerRegistry registry) {
-        File dir = new File(uploadDir);
-        if (!dir.exists()) {
-            dir.mkdirs();
-        }
+        String dir = fileStorageConfig.getUploadDir();
+        new File(dir).mkdirs();
         registry.addResourceHandler("/uploads/**")
-                .addResourceLocations("file:" + dir.getAbsolutePath() + "/");
+                .addResourceLocations("file:" + new File(dir).getAbsolutePath() + "/");
     }
 }

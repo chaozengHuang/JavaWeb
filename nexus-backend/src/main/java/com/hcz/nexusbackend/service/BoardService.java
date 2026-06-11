@@ -3,6 +3,7 @@ package com.hcz.nexusbackend.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.hcz.nexusbackend.entity.Comment;
+import com.hcz.nexusbackend.config.FileStorageConfig;
 import com.hcz.nexusbackend.entity.Board;
 import com.hcz.nexusbackend.entity.Post;
 import com.hcz.nexusbackend.entity.User;
@@ -179,8 +180,8 @@ public class BoardService {
         boardMapper.updateById(board);
     }
 
-    @Value("${file.upload.dir:uploads}")
-    private String uploadDir;
+    @Autowired
+    private FileStorageConfig fileStorageConfig;
 
     @Transactional
     public String uploadBoardAvatar(Long boardId, MultipartFile file) {
@@ -195,7 +196,7 @@ public class BoardService {
         }
         String fileName = "board_" + boardId + "_" + UUID.randomUUID().toString().substring(0, 8) + ext;
 
-        File dir = new File(uploadDir + "/avatars");
+        File dir = new File(fileStorageConfig.getUploadDir() + "/avatars");
         if (!dir.exists()) {
             dir.mkdirs();
         }

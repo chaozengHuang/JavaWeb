@@ -1,6 +1,7 @@
 package com.hcz.nexusbackend.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.hcz.nexusbackend.config.FileStorageConfig;
 import com.hcz.nexusbackend.entity.Board;
 import com.hcz.nexusbackend.entity.BrowseHistory;
 import com.hcz.nexusbackend.entity.Post;
@@ -54,8 +55,8 @@ public class ProfileServiceImpl implements ProfileService {
     @Autowired
     private BoardMapper boardMapper;
 
-    @Value("${file.upload.dir:uploads}")
-    private String uploadDir;
+    @Autowired
+    private FileStorageConfig fileStorageConfig;
 
     private Long getCurrentUserId() {
         Long userId = SecurityUtils.getUserId();
@@ -164,7 +165,7 @@ public class ProfileServiceImpl implements ProfileService {
         }
         String fileName = "avatar_" + userId + "_" + UUID.randomUUID().toString().substring(0, 8) + ext;
 
-        File dir = new File(uploadDir + "/images");
+        File dir = new File(fileStorageConfig.getUploadDir() + "/images");
         if (!dir.exists()) dir.mkdirs();
 
         File destFile = new File(dir, fileName);
@@ -195,7 +196,7 @@ public class ProfileServiceImpl implements ProfileService {
             ext = originalName.substring(originalName.lastIndexOf("."));
         }
         String fileName = "bg_" + userId + "_" + UUID.randomUUID().toString().substring(0, 8) + ext;
-        File dir = new File(uploadDir + "/images");
+        File dir = new File(fileStorageConfig.getUploadDir() + "/images");
         if (!dir.exists()) dir.mkdirs();
         try { file.transferTo(new File(dir, fileName)); }
         catch (IOException e) { throw new BusinessException("背景上传失败"); }

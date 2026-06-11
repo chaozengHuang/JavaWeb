@@ -1,7 +1,8 @@
 package com.hcz.nexusbackend.controller;
 
 import com.hcz.nexusbackend.common.Result;
-import org.springframework.beans.factory.annotation.Value;
+import com.hcz.nexusbackend.config.FileStorageConfig;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -17,8 +18,8 @@ import java.util.UUID;
 @RequestMapping("/api/upload")
 public class UploadController {
 
-    @Value("${file.upload.dir:uploads}")
-    private String uploadDir;
+    @Autowired
+    private FileStorageConfig fileStorageConfig;
 
     @PostMapping("/image")
     public Result<Map<String, Object>> uploadImage(@RequestParam("file") MultipartFile file) {
@@ -42,7 +43,7 @@ public class UploadController {
             }
             String fileName = subDir + "_" + UUID.randomUUID().toString().substring(0, 8) + ext;
 
-            File dir = new File(uploadDir + "/" + subDir);
+            File dir = new File(fileStorageConfig.getUploadDir() + "/" + subDir);
             if (!dir.exists()) dir.mkdirs();
 
             file.transferTo(new File(dir, fileName));
