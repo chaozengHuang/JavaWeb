@@ -13,7 +13,7 @@ const props = defineProps({
 const emit = defineEmits(['retry'])
 const router = vueRouter()
 
-const BASE = 'http://localhost:8081'
+const BASE = ''
 
 // 解析消息内容：提取图片、链接、纯文本
 const parts = computed(() => {

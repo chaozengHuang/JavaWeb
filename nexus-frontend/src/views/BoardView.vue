@@ -363,7 +363,7 @@ onMounted(() => {
     <div v-if="boardDetail" class="board-info-card">
       <div class="board-info-header">
         <div class="board-detail-header">
-          <el-avatar :size="56" :src="boardDetail.board?.avatar ? 'http://localhost:8081' + boardDetail.board.avatar : ''" shape="square">
+          <el-avatar :size="56" :src="boardDetail.board?.avatar ? '' + boardDetail.board.avatar : ''" shape="square">
             {{ boardDetail.board?.name?.charAt(0) || '吧' }}
           </el-avatar>
           <h2 style="margin:0;">{{ boardDetail.board?.name }}</h2>

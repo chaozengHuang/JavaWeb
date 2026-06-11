@@ -152,7 +152,13 @@
                 <version>${spring-boot.version}</version>
                 <configuration>
                     <mainClass>com.hcz.nexusbackend.NexusBackendApplication</mainClass>
-                    <skip>true</skip>
+                    <skip>false</skip>
+                    <excludes>
+                        <exclude>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                        </exclude>
+                    </excludes>
                 </configuration>
                 <executions>
                     <execution>

@@ -100,7 +100,7 @@ onMounted(() => {
           <el-avatar
             :size="48"
             shape="square"
-            :src="board.avatar ? 'http://localhost:8081' + board.avatar : ''"
+            :src="board.avatar ? '' + board.avatar : ''"
           >
             {{ board.name?.charAt(0) }}
           </el-avatar>

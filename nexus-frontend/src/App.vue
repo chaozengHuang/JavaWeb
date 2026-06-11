@@ -129,7 +129,8 @@ const connectWebSocket = () => {
 
   if (ws && ws.readyState === WebSocket.OPEN) return
 
-  ws = new WebSocket(`ws://localhost:8081/ws/chat?token=${token}`)
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+  ws = new WebSocket(`${protocol}//${window.location.host}/ws/chat?token=${token}`)
 
   ws.onopen = () => {
     console.log('WebSocket 已连接')
@@ -260,7 +261,7 @@ defineExpose({ user, loadUser })
             <el-avatar
               :size="34"
               class="user-avatar-btn"
-              :src="(user.avatar && user.avatar.startsWith('/')) ? 'http://localhost:8081' + user.avatar : ''"
+              :src="(user.avatar && user.avatar.startsWith('/')) ? '' + user.avatar : ''"
             >{{ user.username?.charAt(0) }}</el-avatar>
           </template>
           <div style="text-align:center;padding:8px 0 12px;">

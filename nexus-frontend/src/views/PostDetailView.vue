@@ -60,7 +60,7 @@ const handleSubmitComment = async () => {
 const handleCommentImage = async (e) => { const f=e.target.files?.[0]; if(!f)return; if(!f.type.startsWith('image/')){ElMessage.warning('请选择图片文件');return}; commentImageUploading.value=true; try{const r=await uploadImage(f);commentInput.value+=`\n![图片](${r.data?.url||''})\n`}catch{ElMessage.error('图片上传失败')}finally{commentImageUploading.value=false};e.target.value='' }
 const startReply = (c) => { replyTarget.value = { id: c.id, username: c.authorUsername }; commentInput.value = '' }
 
-const parseContent = (text) => { if(!text)return''; return text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/!\[([^\]]*)\]\((\/uploads\/[^)]+)\)/g,'<img src="http://localhost:8081$2" alt="$1" style="max-width:100%;border-radius:8px;margin:4px 0;" />').replace(/\n/g,'<br>') }
+const parseContent = (text) => { if(!text)return''; return text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/!\[([^\]]*)\]\((\/uploads\/[^)]+)\)/g,'<img src="$2" alt="$1" style="max-width:100%;border-radius:8px;margin:4px 0;" />').replace(/\n/g,'<br>') }
 const renderedContent = computed(() => parseContent(post.value?.content))
 
 const handleDeleteComment = async (id) => { try { await ElMessageBox.confirm('确定删除这条评论吗？','提示',{type:'warning'}); await deleteComment(id); ElMessage.success('删除成功'); fetchComments(); post.value.commentCount=Math.max(0,(post.value.commentCount||0)-1) } catch(err) { if(err!=='cancel') ElMessage.error(err.message) } }

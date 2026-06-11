@@ -95,7 +95,7 @@ onMounted(() => {
             class="friend-card"
           >
             <div class="friend-info" @click="goToProfile(f.userId)">
-              <el-avatar :size="48" :src="f.avatar ? 'http://localhost:8081' + f.avatar : ''">
+              <el-avatar :size="48" :src="f.avatar ? '' + f.avatar : ''">
                 {{ f.username?.charAt(0) }}
               </el-avatar>
               <div class="friend-meta">
@@ -127,7 +127,7 @@ onMounted(() => {
             class="request-card"
           >
             <div class="request-info" @click="goToProfile(req.userId)">
-              <el-avatar :size="40" :src="req.avatar ? 'http://localhost:8081' + req.avatar : ''">
+              <el-avatar :size="40" :src="req.avatar ? '' + req.avatar : ''">
                 {{ req.username?.charAt(0) }}
               </el-avatar>
               <span class="request-username">{{ req.username }}</span>

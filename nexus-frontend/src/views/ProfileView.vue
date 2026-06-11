@@ -12,7 +12,7 @@ import { sendFriendRequest, isFriend } from '@/api/friend'
 import { getMyBoards } from '@/api/board'
 import { getPostsByUser } from '@/api/post'
 
-const BASE = 'http://localhost:8081'
+const BASE = ''
 const route = useRoute()
 const router = useRouter()
 
