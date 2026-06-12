@@ -102,9 +102,13 @@ onMounted(async () => {
         <div class="post-body" v-html="renderedContent"></div>
         <div class="post-actions">
           <div class="action-left">
-            <el-button :type="liked?'primary':'default'" text @click="handleLike">{{ post.likeCount||0 }}</el-button>
-            <el-button :type="favorited?'primary':'default'" text @click="handleFavorite">{{ post.favoriteCount||0 }}</el-button>
-            <span class="comment-count">{{ post.commentCount||0 }}</span>
+            <el-button :type="liked?'primary':'default'" text @click="handleLike">
+              👍 {{ post.likeCount||0 }}
+            </el-button>
+            <el-button :type="favorited?'primary':'default'" text @click="handleFavorite">
+              {{ favorited ? '⭐' : '☆' }} {{ post.favoriteCount||0 }}
+            </el-button>
+            <span class="comment-count">💬 {{ post.commentCount||0 }}</span>
           </div>
           <div v-if="canManage" class="action-right">
             <el-button type="primary" text @click="openEditDialog">编辑</el-button>

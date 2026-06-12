@@ -116,6 +116,7 @@ const handleAvatarChange = async (e) => {
     profile.value.avatar = res.data
     const s = JSON.parse(localStorage.getItem('user')||'{}')
     if (s.user) { s.user.avatar = res.data; localStorage.setItem('user', JSON.stringify(s)) }
+    window.dispatchEvent(new Event('avatar-updated'))
     ElMessage.success('头像已更新')
   } catch (err) { ElMessage.error(err.message || '上传失败') }
   finally { avatarUploading.value = false }

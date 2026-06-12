@@ -19,6 +19,7 @@ let ws = null
 let wsReconnectTimer = null
 let unreadTimer = null
 let pointsUpdateHandler = null
+let avatarHandler = null
 
 const isAdmin = computed(() => {
   return user.value?.globalRole === 'SYS_ADMIN'
@@ -213,6 +214,8 @@ onMounted(() => {
     }
   }
   window.addEventListener('points-updated', pointsUpdateHandler)
+  avatarHandler = () => loadUser()
+  window.addEventListener('avatar-updated', avatarHandler)
 })
 
 onUnmounted(() => {
@@ -220,6 +223,9 @@ onUnmounted(() => {
   if (unreadTimer) clearInterval(unreadTimer)
   if (pointsUpdateHandler) {
     window.removeEventListener('points-updated', pointsUpdateHandler)
+  }
+  if (avatarHandler) {
+    window.removeEventListener('avatar-updated', avatarHandler)
   }
 })
 
