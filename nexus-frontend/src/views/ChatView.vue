@@ -166,12 +166,12 @@ const handleChatFile = async (e) => {
 const appendMessage = (msg) => {
   const relatedUserId = msg.senderId === currentUser.value.id ? msg.receiverId : msg.senderId
   if (activeUserId.value === relatedUserId || activeUserId.value === msg.senderId) {
+    // 优先查找发送中的本地消息进行替换
     const optIdx = messages.value.findIndex(
-      m => m.id > 1000000000000 && m.senderId === msg.senderId && m.content === msg.content
+      m => m.sendStatus === 'sending' && m.senderId === msg.senderId && m.content === msg.content
     )
     if (optIdx >= 0) {
       messages.value.splice(optIdx, 1, { ...msg, sendStatus: 'sent' })
-      // 成功后清除对应的失败记录
       saveFailedMessages()
     } else {
       messages.value.push({ ...msg, sendStatus: 'sent' })
