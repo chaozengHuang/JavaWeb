@@ -183,7 +183,7 @@ public class CommentService {
     }
 
     @Transactional
-    public void accept(Long id) {
+    public int accept(Long id, Integer points) {
         Long userId = SecurityUtils.getUserId();
         if (userId == null) {
             throw new BusinessException(401, "请先登录");
@@ -220,13 +220,8 @@ public class CommentService {
             throw new BusinessException("不能采纳自己的评论");
         }
 
-        // 检查该帖是否已有被采纳的评论
-        Long acceptedCount = commentMapper.selectCount(
-                new LambdaQueryWrapper<Comment>()
-                        .eq(Comment::getPostId, post.getId())
-                        .eq(Comment::getIsAccepted, 1));
-        if (acceptedCount > 0) {
-            throw new BusinessException("该悬赏帖已有被采纳的答案");
+        if (points == null || points <= 0 || points > post.getRewardPoints()) {
+            throw new BusinessException("悬赏积分无效");
         }
 
         Comment update = new Comment();
@@ -234,17 +229,17 @@ public class CommentService {
         update.setIsAccepted(1);
         commentMapper.updateById(update);
 
-        // 转移积分
-        int rewardPoints = post.getRewardPoints();
+        // 转移指定金额积分
         User commentAuthor = userMapper.selectById(comment.getAuthorId());
         if (commentAuthor != null) {
-            commentAuthor.setPoints((commentAuthor.getPoints() != null ? commentAuthor.getPoints() : 0) + rewardPoints);
+            commentAuthor.setPoints((commentAuthor.getPoints() != null ? commentAuthor.getPoints() : 0) + points);
             userMapper.updateById(commentAuthor);
         }
         Post reset = new Post();
         reset.setId(post.getId());
-        reset.setRewardPoints(0);
+        reset.setRewardPoints(post.getRewardPoints() - points);
         postMapper.updateById(reset);
+        return points;
     }
 
     public IPage<Comment> adminList(String keyword, String status, Long postId, Integer page, Integer size) {

@@ -67,6 +67,14 @@ export const getBoards = (params) => request.get('/admin/boards', { params })
 export const updateBoardStatus = (boardId, status) =>
   request.put(`/admin/boards/${boardId}/status`, null, { params: { status } })
 
+// ==================== 硬删除（物理清除） ====================
+
+export const hardDeleteUser = (userId) => request.delete(`/admin/users/${userId}/hard`)
+export const hardDeletePost = (postId) => request.delete(`/admin/posts/${postId}/hard`)
+export const hardDeleteComment = (commentId) => request.delete(`/admin/comments/${commentId}/hard`)
+export const hardDeleteBoard = (boardId) => request.delete(`/admin/boards/${boardId}/hard`)
+export const deleteLog = (logId) => request.delete(`/admin/logs/${logId}`)
+
 // ==================== 通知管理员 ====================
 
 export const getNotifyAdmin = () => request.get('/admin/notify-admin')

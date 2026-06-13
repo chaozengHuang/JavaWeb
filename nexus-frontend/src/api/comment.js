@@ -13,6 +13,6 @@ export const deleteComment = (id) => {
   return request.delete(`/comment/${id}`)
 }
 
-export const acceptComment = (id) => {
-  return request.put(`/comment/${id}/accept`)
+export const acceptComment = (id, points) => {
+  return request.put(`/comment/${id}/accept`, { points })
 }

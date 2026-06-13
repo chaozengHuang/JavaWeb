@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getHistory, markAsRead, getChatList } from '@/api/message'
 import { uploadImage, uploadFile } from '@/api/upload'
+import { isFriend } from '@/api/friend'
 import ChatList from '@/components/ChatList.vue'
 import ChatMessage from '@/components/ChatMessage.vue'
 
@@ -18,6 +19,7 @@ const messagesContainer = ref(null)
 const loading = ref(false)
 const showEmoji = ref(false)
 const emojis = ['😀','😃','😄','😁','😅','😂','🤣','😊','😇','🙂','😉','😌','😍','🥰','😘','😗','😋','😛','😜','🤪','😝','🤑','🤗','🤭','🤫','🤔','🤐','😏','😒','😔','😕','🙁','☹️','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','💀','☠️','👍','👎','👏','🙌','💪','🤝','🎉','🎊','❤️','🔥','⭐','✅','❌','💯']
+const isNotFriend = ref(false)
 
 const currentUser = computed(() => {
   const stored = localStorage.getItem('user')
@@ -44,6 +46,7 @@ const selectChat = async (userId) => {
   router.replace(`/chat/${userId}`)
   await loadChatList()
   await loadHistory(userId)
+  checkFriendStatus()
   try { await markAsRead(userId) } catch { /* ignore */ }
 }
 
@@ -195,6 +198,11 @@ const getPeerUsername = () => {
   return chats.value.find(c => c.userId === activeUserId.value)?.username || null
 }
 
+const checkFriendStatus = async () => {
+  if (!activeUserId.value || activeUserId.value === currentUser.value.id) { isNotFriend.value = false; return }
+  try { const res = await isFriend(Number(activeUserId.value)); isNotFriend.value = res.data?.status !== 'accepted' } catch { isNotFriend.value = false }
+}
+
 onMounted(async () => {
   window.__onChatMessage = (msg) => {
     if (msg.type === 'new_message' || msg.type === 'message_sent') {
@@ -216,6 +224,7 @@ onMounted(async () => {
   if (targetUserId) {
     activeUserId.value = Number(targetUserId)
     await loadHistory(Number(targetUserId))
+    checkFriendStatus()
     try { await markAsRead(Number(targetUserId)) } catch { /* ignore */ }
   }
 })
@@ -258,6 +267,7 @@ watch(() => route.params.userId, (newVal) => {
           />
           <div v-if="messages.length === 0 && !loading" class="chat-empty">暂无消息，发送第一条消息吧</div>
         </div>
+        <div v-if="isNotFriend" class="nonfriend-hint">⚠ 当前双方不是好友，每人最多发送一条消息</div>
         <div class="chat-input-area">
           <div class="chat-input-left">
             <div class="chat-toolbar">
@@ -374,4 +384,5 @@ watch(() => route.params.userId, (newVal) => {
 .emoji-item:hover { background: #f0f0f0; transform: scale(1.15); }
 .emoji-fade-enter-active, .emoji-fade-leave-active { transition: all 0.2s ease; }
 .emoji-fade-enter-from, .emoji-fade-leave-to { opacity: 0; max-height: 0; padding-top: 0; padding-bottom: 0; }
+.nonfriend-hint { padding: 6px 16px; background: #fef3e6; color: #e6a23c; font-size: 12px; text-align: center; border-top: 1px solid #faecd8; }
 </style>

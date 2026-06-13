@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/comment")
@@ -44,8 +45,9 @@ public class CommentController {
     }
 
     @PutMapping("/{id}/accept")
-    public Result<Void> accept(@PathVariable Long id) {
-        commentService.accept(id);
-        return Result.success("采纳成功", null);
+    public Result<Map<String, Object>> accept(@PathVariable Long id, @RequestBody Map<String, Object> body) {
+        Integer points = body.get("points") != null ? Integer.valueOf(body.get("points").toString()) : null;
+        int awarded = commentService.accept(id, points);
+        return Result.success("采纳成功，已转移" + awarded + "积分", Map.of("awarded", awarded));
     }
 }

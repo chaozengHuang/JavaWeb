@@ -64,7 +64,18 @@ const parseContent = (text) => { if(!text)return''; return text.replace(/&/g,'&a
 const renderedContent = computed(() => parseContent(post.value?.content))
 
 const handleDeleteComment = async (id) => { try { await ElMessageBox.confirm('确定删除这条评论吗？','提示',{type:'warning'}); await deleteComment(id); ElMessage.success('删除成功'); fetchComments(); post.value.commentCount=Math.max(0,(post.value.commentCount||0)-1) } catch(err) { if(err!=='cancel') ElMessage.error(err.message) } }
-const handleAcceptComment = async (id) => { try { await acceptComment(id); ElMessage.success('采纳成功'); fetchPost(); fetchComments() } catch(err) { ElMessage.error(err.message) } }
+const handleAcceptComment = async (id) => {
+  const maxPoints = post.value?.rewardPoints || 0
+  if (maxPoints <= 0) { ElMessage.warning('悬赏积分已用完'); return }
+  try {
+    const { value } = await ElMessageBox.prompt('请输入悬赏金额（积分）', '采纳评论', { inputValue: maxPoints, inputType: 'number', inputValidator: v => { const n = Number(v); return n <= 0 || n > maxPoints ? `请输入1~${maxPoints}之间的积分` : true }, confirmButtonText: '确认采纳', cancelButtonText: '取消' })
+    await acceptComment(id, Number(value))
+    ElMessage.success(`已采纳，转移${value}积分`)
+    fetchPost(); fetchComments()
+  } catch(err) {
+    if (err !== 'cancel') ElMessage.error(err.message || '采纳失败')
+  }
+}
 const openEditDialog = () => { editForm.value = { title:post.value.title, content:post.value.content }; editDialogVisible.value = true }
 const handleEdit = async () => { if(!editForm.value.title||!editForm.value.content)return ElMessage.warning('请填写完整'); try{await updatePost(postId.value,{title:editForm.value.title,content:editForm.value.content});ElMessage.success('修改成功');editDialogVisible.value=false;fetchPost()}catch(err){ElMessage.error(err.message)} }
 const handleDelete = async () => { try{await ElMessageBox.confirm('确定删除这篇帖子吗？','提示',{type:'warning'});const pt=post.value;await deletePost(postId.value);ElMessage.success('删除成功');if(pt?.type==='REWARD'&&pt?.rewardPoints>0){const s=JSON.parse(localStorage.getItem('user')||'{}');if(s.user&&s.user.points!=null){s.user.points+=pt.rewardPoints;localStorage.setItem('user',JSON.stringify(s));window.dispatchEvent(new CustomEvent('points-updated',{detail:{points:s.user.points}}))}}router.push('/forum')}catch(err){if(err!=='cancel')ElMessage.error(err.message)} }
@@ -132,7 +143,7 @@ onMounted(async () => {
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.5"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path d="M21 15l-5-5L5 21h16v-6z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
                   <input type="file" accept="image/*" @change="handleCommentImage" />
                 </label>
-                <el-popover placement="top" :width="320" trigger="click" popper-class="emoji-popover">
+                <el-popover placement="right-start" :width="320" trigger="click" popper-class="emoji-popover">
                   <template #reference><button class="comment-tool-btn" title="表情">😊</button></template>
                   <div class="emoji-grid-popup"><button v-for="e in emojiList" :key="e" class="emoji-chip" type="button" @click="commentInput+=e">{{ e }}</button></div>
                 </el-popover>
@@ -166,6 +177,7 @@ onMounted(async () => {
                     <div class="comment-body"><span v-html="parseContent(child.content)"></span></div>
                     <div class="comment-actions">
                       <el-button size="small" text @click="startReply(comment)">回复</el-button>
+                      <template v-if="isAuthor&&child.isAccepted!==1&&post.type==='REWARD'&&post.rewardPoints>0"><el-button type="success" size="small" text @click="handleAcceptComment(child.id)">采纳</el-button></template>
                       <template v-if="child.authorId===currentUser.id||currentUser.globalRole==='SYS_ADMIN'"><el-button type="danger" size="small" text @click="handleDeleteComment(child.id)">删除</el-button></template>
                     </div>
                   </div>

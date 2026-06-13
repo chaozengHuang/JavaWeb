@@ -1,81 +1,44 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { getAdminLogs } from '@/api/admin'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { getAdminLogs, deleteLog } from '@/api/admin'
 
 const logs = ref([])
 const loading = ref(false)
-const pagination = ref({ current: 1, size: 20, total: 0 })
+const pag = ref({ current: 1, size: 20, total: 0 })
 
-const fetchLogs = async (page = 1) => {
-  loading.value = true
-  pagination.value.current = page
-  try {
-    const res = await getAdminLogs({ page, size: pagination.value.size })
-    logs.value = res.data?.records || []
-    pagination.value.total = res.data?.total || 0
-  } catch (err) {
-    ElMessage.error(err.message || '获取日志失败')
-  } finally {
-    loading.value = false
-  }
+const load = async (p = 1) => {
+  loading.value = true; pag.value.current = p
+  try { const r = await getAdminLogs({ page: p, size: pag.value.size }); logs.value = r.data?.records || []; pag.value.total = r.data?.total || 0 } catch (e) { ElMessage.error(e.message) } finally { loading.value = false }
 }
 
-const actionLabel = (action) => {
-  const map = {
-    RESET_PASSWORD: '重置密码',
-    BAN_USER: '封禁用户',
-    UNBAN_USER: '解封用户',
-    UPDATE_POST_STATUS: '修改帖子状态',
-    UPDATE_COMMENT_STATUS: '修改评论状态',
-    BATCH_UPDATE_POST_STATUS: '批量修改帖子',
-    BATCH_UPDATE_COMMENT_STATUS: '批量修改评论',
-  }
-  return map[action] || action
+const handleDelete = (row) => {
+  ElMessageBox.confirm('确定删除该条日志？', '提示', { type: 'warning' }).then(async () => {
+    await deleteLog(row.id); ElMessage.success('已删除'); load(pag.value.current)
+  }).catch(() => {})
 }
 
-const targetLabel = (type) => {
-  return type === 'USER' ? '用户' : type === 'POST' ? '帖子' : type === 'COMMENT' ? '评论' : type
-}
+const aLabel = (a) => ({ RESET_PASSWORD: '重置密码', BAN_USER: '封禁', UNBAN_USER: '解封', UPDATE_POST_STATUS: '改帖状态', UPDATE_COMMENT_STATUS: '改评状态', HARD_DELETE_USER: '清理用户', HARD_DELETE_POST: '清理帖子', HARD_DELETE_COMMENT: '清理评论', HARD_DELETE_BOARD: '清理吧', DELETE_BOARD: '删吧', RESTORE_BOARD: '恢复吧', BATCH_UPDATE_POST_STATUS: '批量改帖', BATCH_UPDATE_COMMENT_STATUS: '批量改评' }[a] || a)
+const fmt = (t) => t ? t.replace('T', ' ').slice(0, 19) : '-'
 
-const formatTime = (t) => {
-  if (!t) return '-'
-  return t.replace('T', ' ').substring(0, 19)
-}
-
-onMounted(() => fetchLogs())
+onMounted(load)
 </script>
 
 <template>
-  <div class="log-page">
+  <div>
     <h3>操作日志</h3>
     <el-table :data="logs" v-loading="loading" stripe border>
-      <el-table-column prop="adminUsername" label="操作人" width="120" />
-      <el-table-column label="操作" width="130">
-        <template #default="{ row }">
-          <el-tag size="small">{{ actionLabel(row.action) }}</el-tag>
-        </template>
-      </el-table-column>
+      <el-table-column prop="adminUsername" label="操作人" width="100" />
+      <el-table-column label="操作" width="110"><template #default="{row}"><el-tag size="small">{{ aLabel(row.action) }}</el-tag></template></el-table-column>
+      <el-table-column prop="targetType" label="目标类型" width="80" />
       <el-table-column prop="detail" label="详情" min-width="200" show-overflow-tooltip />
-      <el-table-column label="时间" width="170">
-        <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
+      <el-table-column label="时间" width="160"><template #default="{row}">{{ fmt(row.createdAt) }}</template></el-table-column>
+      <el-table-column label="操作" width="60" fixed="right">
+        <template #default="{row}"><el-button size="small" text type="danger" @click="handleDelete(row)">删除</el-button></template>
       </el-table-column>
     </el-table>
-    <div style="display:flex;justify-content:center;padding:20px 0;" v-if="pagination.total > pagination.size">
-      <el-pagination
-        :current-page="pagination.current"
-        :page-size="pagination.size"
-        :total="pagination.total"
-        layout="prev, pager, next"
-        @current-change="fetchLogs"
-      />
+    <div style="text-align:center;padding:16px 0;" v-if="pag.total > pag.size">
+      <el-pagination :current-page="pag.current" :page-size="pag.size" :total="pag.total" layout="prev,pager,next" background @current-change="load" />
     </div>
   </div>
 </template>
-
-<style scoped>
-.log-page h3 {
-  margin: 0 0 16px 0;
-  color: #303133;
-}
-</style>

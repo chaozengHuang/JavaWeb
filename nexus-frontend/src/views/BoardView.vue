@@ -522,7 +522,7 @@ onMounted(() => {
               <span>图片</span>
               <input type="file" accept="image/*" @change="handlePostImageUpload" />
             </label>
-            <el-popover placement="bottom" :width="300" trigger="click" popper-class="emoji-popover">
+            <el-popover placement="right-start" :width="300" trigger="click" popper-class="emoji-popover">
               <template #reference>
                 <button class="toolbar-btn" type="button" title="表情">😊 <span>表情</span></button>
               </template>

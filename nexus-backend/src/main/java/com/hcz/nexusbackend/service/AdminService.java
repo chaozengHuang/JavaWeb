@@ -406,4 +406,43 @@ public class AdminService {
         wrapper.orderByDesc(AdminLog::getId);
         return adminLogMapper.selectPage(pageParam, wrapper);
     }
+
+    // ==================== 硬删除（物理清除） ====================
+
+    public void hardDeleteUser(Long userId) {
+        User admin = getCurrentAdmin();
+        User user = userMapper.selectById(userId);
+        if (user == null) throw new BusinessException("用户不存在");
+        userMapper.deleteById(userId);
+        logAction(admin, "HARD_DELETE_USER", "USER", userId, "物理删除用户 " + user.getUsername());
+    }
+
+    public void hardDeletePost(Long postId) {
+        User admin = getCurrentAdmin();
+        Post post = postMapper.selectById(postId);
+        if (post == null) throw new BusinessException("帖子不存在");
+        postMapper.deleteById(postId);
+        logAction(admin, "HARD_DELETE_POST", "POST", postId, "物理删除帖子 " + post.getTitle());
+    }
+
+    public void hardDeleteComment(Long commentId) {
+        User admin = getCurrentAdmin();
+        Comment comment = commentMapper.selectById(commentId);
+        if (comment == null) throw new BusinessException("评论不存在");
+        commentMapper.deleteById(commentId);
+        logAction(admin, "HARD_DELETE_COMMENT", "COMMENT", commentId, "物理删除评论#" + commentId);
+    }
+
+    public void hardDeleteBoard(Long boardId) {
+        User admin = getCurrentAdmin();
+        Board board = boardMapper.selectById(boardId);
+        if (board == null) throw new BusinessException("贴吧不存在");
+        boardMapper.deleteById(boardId);
+        logAction(admin, "HARD_DELETE_BOARD", "BOARD", boardId, "物理删除贴吧 " + board.getName());
+    }
+
+    public void hardDeleteLog(Long logId) {
+        getCurrentAdmin();
+        adminLogMapper.deleteById(logId);
+    }
 }

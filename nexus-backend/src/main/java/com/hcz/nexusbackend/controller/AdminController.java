@@ -210,6 +210,23 @@ public class AdminController {
         return Result.success("操作成功", null);
     }
 
+    // ==================== 硬删除（物理清除） ====================
+
+    @DeleteMapping("/users/{userId}/hard")
+    public Result<Void> hardDeleteUser(@PathVariable Long userId) { adminService.hardDeleteUser(userId); return Result.success("已清理", null); }
+
+    @DeleteMapping("/posts/{postId}/hard")
+    public Result<Void> hardDeletePost(@PathVariable Long postId) { adminService.hardDeletePost(postId); return Result.success("已清理", null); }
+
+    @DeleteMapping("/comments/{commentId}/hard")
+    public Result<Void> hardDeleteComment(@PathVariable Long commentId) { adminService.hardDeleteComment(commentId); return Result.success("已清理", null); }
+
+    @DeleteMapping("/boards/{boardId}/hard")
+    public Result<Void> hardDeleteBoard(@PathVariable Long boardId) { adminService.hardDeleteBoard(boardId); return Result.success("已清理", null); }
+
+    @DeleteMapping("/logs/{logId}")
+    public Result<Void> deleteLog(@PathVariable Long logId) { adminService.hardDeleteLog(logId); return Result.success("已删除", null); }
+
     // ==================== 通知管理员 ====================
 
     @GetMapping("/notify-admin")
