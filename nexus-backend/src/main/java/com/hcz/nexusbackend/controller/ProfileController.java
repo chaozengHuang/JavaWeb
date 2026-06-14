@@ -63,6 +63,12 @@ public class ProfileController {
         return Result.success("设置成功", profileService.setDefaultBackground(body.get("bgName")));
     }
 
+    @PutMapping("/change-password")
+    public Result<Void> changePassword(@RequestBody Map<String, String> body) {
+        profileService.changePassword(body.get("oldPassword"), body.get("newPassword"));
+        return Result.success("密码修改成功", null);
+    }
+
     // ==================== 收藏 ====================
 
     @PostMapping("/favorites/{postId}")

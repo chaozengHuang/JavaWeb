@@ -19,3 +19,10 @@ export const getUserInfoById = (userId) => {
 export const getPublicProfile = (userId) => {
   return request.get(`/api/profile/public/${userId}`)
 }
+
+// 忘记密码
+export const sendResetCode = (username) =>
+  request.post('/api/user/forgot-password/send-code', { username })
+
+export const verifyResetCode = (username, code) =>
+  request.post('/api/user/forgot-password/verify', { username, code })

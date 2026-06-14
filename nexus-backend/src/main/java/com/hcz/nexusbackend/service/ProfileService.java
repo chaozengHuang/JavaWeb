@@ -22,6 +22,8 @@ public interface ProfileService {
 
     String setDefaultBackground(String bgName);
 
+    boolean changePassword(String oldPassword, String newPassword);
+
     // 收藏
     void toggleFavorite(Long postId);
 

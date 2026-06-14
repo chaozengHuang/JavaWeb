@@ -17,6 +17,12 @@ const load = async () => {
   try { const r = await getUsers({ page: page.value, size: size.value, ...filters }); list.value = r.data?.records || []; total.value = r.data?.total || 0 } catch (e) { ElMessage.error(e.message) } finally { loading.value = false }
 }
 
+const handleResetPwd = (row) => {
+  ElMessageBox.confirm(`确定重置用户「${row.username}」的密码为 123456？`, '重置密码', { type: 'warning' }).then(async () => {
+    await resetUserPassword(row.id, '123456'); ElMessage.success('密码已重置为 123456')
+  }).catch(() => {})
+}
+
 const handleToggle = (row) => {
   const s = row.status === 'BANNED' ? 'ACTIVE' : 'BANNED'
   const a = s === 'BANNED' ? '封禁' : '解封'
@@ -50,11 +56,14 @@ onMounted(load)
       <el-table-column label="状态" width="80"><template #default="{row}"><el-tag size="small" :type="row.status==='BANNED'?'danger':'success'">{{ row.status==='BANNED'?'已封禁':'正常' }}</el-tag></template></el-table-column>
       <el-table-column prop="points" label="积分" width="80" />
       <el-table-column prop="createdAt" label="注册时间" width="160"><template #default="{row}">{{ (row.createdAt||'').replace('T',' ').slice(0,19) }}</template></el-table-column>
-      <el-table-column label="操作" width="200" fixed="right">
+      <el-table-column label="操作" width="320" fixed="right">
         <template #default="{row}">
-          <el-button size="small" text type="primary" @click="router.push('/user/'+row.id)">主页</el-button>
-          <el-button size="small" text :type="row.status==='BANNED'?'success':'danger'" @click="handleToggle(row)">{{ row.status==='BANNED'?'解封':'封禁' }}</el-button>
-          <el-button size="small" text type="danger" style="margin-left:6px;border-left:1px solid #eee;padding-left:8px;" @click="handleHardDelete(row)">清理</el-button>
+          <div class="action-row">
+            <el-button size="small" text type="primary" @click="router.push('/user/'+row.id)">主页</el-button>
+            <el-button size="small" text type="warning" @click="handleResetPwd(row)">重置密码</el-button>
+            <el-button size="small" text :type="row.status==='BANNED'?'success':'danger'" @click="handleToggle(row)">{{ row.status==='BANNED'?'解封':'封禁' }}</el-button>
+            <el-button size="small" text type="danger" @click="handleHardDelete(row)">清理</el-button>
+          </div>
         </template>
       </el-table-column>
     </el-table>
@@ -63,3 +72,12 @@ onMounted(load)
     </div>
   </div>
 </template>
+
+<style scoped>
+.action-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  white-space: nowrap;
+}
+</style>

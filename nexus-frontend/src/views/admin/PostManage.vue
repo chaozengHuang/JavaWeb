@@ -70,13 +70,15 @@ onMounted(load)
       <el-table-column prop="authorName" label="作者" width="100" />
       <el-table-column label="状态" width="80"><template #default="{row}"><el-tag :type="sType(row.status)" size="small">{{ sLabel(row.status) }}</el-tag></template></el-table-column>
       <el-table-column label="时间" width="160"><template #default="{row}">{{ fmt(row.createdAt) }}</template></el-table-column>
-      <el-table-column label="操作" width="280" fixed="right">
+      <el-table-column label="操作" width="340" fixed="right">
         <template #default="{row}">
-          <el-button size="small" text type="primary" @click="router.push('/post/'+row.id)">跳转</el-button>
-          <el-button v-if="row.status!=='ACTIVE'" size="small" text type="success" @click="handleStatus(row,'ACTIVE')">恢复</el-button>
-          <el-button v-if="row.status!=='BLOCKED'" size="small" text type="warning" @click="handleStatus(row,'BLOCKED')">屏蔽</el-button>
-          <el-button v-if="row.status!=='DELETED'" size="small" text type="danger" @click="handleStatus(row,'DELETED')">删除</el-button>
-          <el-button size="small" text type="danger" style="margin-left:6px;border-left:1px solid #eee;padding-left:8px;" @click="handleHardDelete(row)">清理</el-button>
+          <div class="action-row">
+            <el-button size="small" text type="primary" @click="router.push('/post/'+row.id)">跳转</el-button>
+            <el-button v-if="row.status!=='ACTIVE'" size="small" text type="success" @click="handleStatus(row,'ACTIVE')">恢复</el-button>
+            <el-button v-if="row.status!=='BLOCKED'" size="small" text type="warning" @click="handleStatus(row,'BLOCKED')">屏蔽</el-button>
+            <el-button v-if="row.status!=='DELETED'" size="small" text type="danger" @click="handleStatus(row,'DELETED')">删除</el-button>
+            <el-button size="small" text type="danger" @click="handleHardDelete(row)">清理</el-button>
+          </div>
         </template>
       </el-table-column>
     </el-table>
@@ -85,3 +87,7 @@ onMounted(load)
     </div>
   </div>
 </template>
+
+<style scoped>
+.action-row { display: flex; align-items: center; gap: 2px; white-space: nowrap; }
+</style>

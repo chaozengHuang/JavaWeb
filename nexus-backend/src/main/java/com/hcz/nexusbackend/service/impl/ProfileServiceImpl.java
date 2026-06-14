@@ -22,6 +22,7 @@ import com.hcz.nexusbackend.util.SecurityUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -213,6 +214,23 @@ public class ProfileServiceImpl implements ProfileService {
         User user = new User(); user.setId(userId); user.setBackground(url);
         userMapper.updateById(user);
         return url;
+    }
+
+    @Override
+    public boolean changePassword(String oldPassword, String newPassword) {
+        Long userId = getCurrentUserId();
+        User user = userMapper.selectById(userId);
+        if (user == null) throw new BusinessException("用户不存在");
+        BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+        if (!encoder.matches(oldPassword, user.getPassword())) {
+            throw new BusinessException("原密码错误");
+        }
+        if (newPassword == null || newPassword.length() < 6) {
+            throw new BusinessException("新密码不能少于6位");
+        }
+        user.setPassword(encoder.encode(newPassword));
+        userMapper.updateById(user);
+        return true;
     }
 
     // ==================== 收藏 ====================

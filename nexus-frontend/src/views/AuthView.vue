@@ -1,8 +1,8 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { login, register } from '@/api/user'
-import { ElMessage } from 'element-plus'
+import { login, register, sendResetCode, verifyResetCode } from '@/api/user'
+import { ElMessage, ElMessageBox } from 'element-plus'
 
 const router = useRouter()
 const emit = defineEmits(['login-success'])
@@ -20,6 +20,44 @@ const registerForm = ref({
   password: '',
   confirmPassword: '',
 })
+
+// 忘记密码
+const forgotVisible = ref(false)
+const forgotStep = ref('input')  // 'input' | 'code'
+const forgotUsername = ref('')
+const forgotCode = ref('')
+const forgotLoading = ref(false)
+
+const handleForgotPassword = async () => {
+  if (!forgotUsername.value.trim()) { ElMessage.warning('请输入用户名'); return }
+  forgotLoading.value = true
+  try {
+    await sendResetCode(forgotUsername.value.trim())
+    forgotStep.value = 'code'
+    ElMessage.success('验证码已发送')
+  } catch (err) {
+    const msg = err.message || '发送失败'
+    if (msg.includes('PHONE_REQUIRED')) {
+      ElMessageBox.alert(msg.replace('PHONE_REQUIRED:', ''), '提示', { confirmButtonText: '知道了', type: 'warning' })
+    } else {
+      ElMessage.error(msg)
+    }
+  } finally { forgotLoading.value = false }
+}
+
+const handleVerifyCode = async () => {
+  if (!forgotCode.value.trim()) { ElMessage.warning('请输入验证码'); return }
+  forgotLoading.value = true
+  try {
+    const res = await verifyResetCode(forgotUsername.value.trim(), forgotCode.value.trim())
+    ElMessageBox.alert(res.data?.message || '密码已重置', '成功', { confirmButtonText: '好的', type: 'success' })
+    forgotVisible.value = false
+    forgotStep.value = 'input'
+    forgotUsername.value = ''
+    forgotCode.value = ''
+  } catch (err) { ElMessage.error(err.message || '验证失败') }
+  finally { forgotLoading.value = false }
+}
 
 const openDialog = (tab = 'login') => {
   activeTab.value = tab
@@ -240,7 +278,7 @@ const features = [
           </el-form-item>
         </el-form>
         <p class="switch-tip">
-          没有账号？<a href="#" @click.prevent="activeTab = 'register'">立即注册</a>
+          没有账号？<a href="#" @click.prevent="activeTab = 'register'">立即注册</a> | <a href="#" @click.prevent="forgotVisible = true">忘记密码</a>
         </p>
       </template>
 
@@ -276,6 +314,34 @@ const features = [
         <p class="switch-tip">
           已有账号？<a href="#" @click.prevent="activeTab = 'login'">立即登录</a>
         </p>
+      </template>
+    </el-dialog>
+
+    <!-- 忘记密码弹窗 -->
+    <el-dialog v-model="forgotVisible" title="忘记密码" width="400px" :close-on-click-modal="false" align-center destroy-on-close>
+      <template v-if="forgotStep === 'input'">
+        <el-form label-width="0">
+          <el-form-item>
+            <el-input v-model="forgotUsername" placeholder="请输入用户名" size="large" @keyup.enter="handleForgotPassword" />
+          </el-form-item>
+          <el-form-item>
+            <el-button type="primary" size="large" class="auth-btn" :loading="forgotLoading" @click="handleForgotPassword">发送验证码</el-button>
+          </el-form-item>
+        </el-form>
+        <p style="font-size:13px;color:#909399;text-align:center;">
+          需要绑定手机号才能重置密码<br />未绑定手机号？请联系管理员<br />📱 19219785122
+        </p>
+      </template>
+      <template v-else>
+        <el-form label-width="0">
+          <el-form-item>
+            <el-input v-model="forgotCode" placeholder="请输入6位验证码" size="large" maxlength="6" @keyup.enter="handleVerifyCode" />
+          </el-form-item>
+          <el-form-item>
+            <el-button type="primary" size="large" class="auth-btn" :loading="forgotLoading" @click="handleVerifyCode">验证并重置密码</el-button>
+          </el-form-item>
+        </el-form>
+        <p style="font-size:13px;color:#909399;text-align:center;">验证码10分钟内有效</p>
       </template>
     </el-dialog>
   </div>

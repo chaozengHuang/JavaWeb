@@ -56,13 +56,17 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         Long receiverId = Long.valueOf(payload.get("receiverId").toString());
         String content = (String) payload.get("content");
 
-        // 检查是否为好友（自己是自己的好友，跳过限制）
-        Long friendCount = friendRelationMapper.selectCount(
-                new LambdaQueryWrapper<FriendRelation>()
-                        .eq(FriendRelation::getUserId, senderId)
-                        .eq(FriendRelation::getFriendId, receiverId)
-                        .eq(FriendRelation::getStatus, "ACCEPTED"));
-        boolean isFriend = friendCount > 0;
+        // 自己跟自己聊天，跳过好友限制
+        boolean isFriend = senderId.equals(receiverId);
+        if (!isFriend) {
+            // 检查是否为好友
+            Long friendCount = friendRelationMapper.selectCount(
+                    new LambdaQueryWrapper<FriendRelation>()
+                            .eq(FriendRelation::getUserId, senderId)
+                            .eq(FriendRelation::getFriendId, receiverId)
+                            .eq(FriendRelation::getStatus, "ACCEPTED"));
+            isFriend = friendCount > 0;
+        }
 
         if (!isFriend) {
             // 非好友限制：每人只能发1条

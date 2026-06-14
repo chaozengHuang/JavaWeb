@@ -5,7 +5,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   getProfile, updateProfile, uploadAvatar, uploadBackground, setDefaultBackground,
   getFavorites, removeFavorite, getLikes, removeLike,
-  getHistory, deleteHistory, clearHistory,
+  getHistory, deleteHistory, clearHistory, changePassword,
 } from '@/api/profile'
 import { getPublicProfile } from '@/api/user'
 import { sendFriendRequest, isFriend } from '@/api/friend'
@@ -39,6 +39,25 @@ const listPageSize = ref(10)
 const friendStatus = ref('none')
 const friendLoading = ref(false)
 const myBoards = ref([])
+
+// 修改密码
+const showPwdDialog = ref(false)
+const pwdForm = ref({ oldPassword: '', newPassword: '', confirmPassword: '' })
+const pwdLoading = ref(false)
+
+const handleChangePassword = async () => {
+  if (!pwdForm.value.oldPassword) { ElMessage.warning('请输入原密码'); return }
+  if (!pwdForm.value.newPassword || pwdForm.value.newPassword.length < 6) { ElMessage.warning('新密码不能少于6位'); return }
+  if (pwdForm.value.newPassword !== pwdForm.value.confirmPassword) { ElMessage.warning('两次密码不一致'); return }
+  pwdLoading.value = true
+  try {
+    await changePassword(pwdForm.value.oldPassword, pwdForm.value.newPassword)
+    ElMessage.success('密码已修改，请牢记新密码')
+    showPwdDialog.value = false
+    pwdForm.value = { oldPassword: '', newPassword: '', confirmPassword: '' }
+  } catch (err) { ElMessage.error(err.message || '修改失败') }
+  finally { pwdLoading.value = false }
+}
 
 // ========== default backgrounds ==========
 const defaultBgs = [
@@ -276,6 +295,7 @@ onMounted(async () => { await loadProfile(); await checkFriendStatus(); if (acti
                 <dt>地区</dt><dd>{{ profile?.location || '未设置' }}</dd>
               </dl>
               <el-button v-if="!isOtherUser" size="small" @click="startEditProfile">编辑资料</el-button>
+              <el-button v-if="!isOtherUser" size="small" type="warning" text @click="showPwdDialog = true" style="margin-top:8px;">修改密码</el-button>
             </template>
           </div>
           <!-- right: boards -->
@@ -333,6 +353,20 @@ onMounted(async () => { await loadProfile(); await checkFriendStatus(); if (acti
       </div>
     </div>
   </div>
+
+  <!-- 修改密码弹窗 -->
+  <el-dialog v-model="showPwdDialog" title="修改密码" width="400px" :close-on-click-modal="false" destroy-on-close>
+    <el-form :model="pwdForm" label-width="80px">
+      <el-form-item label="原密码"><el-input v-model="pwdForm.oldPassword" type="password" show-password placeholder="输入原密码" /></el-form-item>
+      <el-form-item label="新密码"><el-input v-model="pwdForm.newPassword" type="password" show-password placeholder="至少6位" /></el-form-item>
+      <el-form-item label="确认密码"><el-input v-model="pwdForm.confirmPassword" type="password" show-password placeholder="再次输入" /></el-form-item>
+    </el-form>
+    <p style="font-size:12px;color:#909399;text-align:center;">忘记密码？去登录页点击"忘记密码"通过短信重置</p>
+    <template #footer>
+      <el-button @click="showPwdDialog = false; pwdForm = { oldPassword: '', newPassword: '', confirmPassword: '' }">取消</el-button>
+      <el-button type="primary" :loading="pwdLoading" @click="handleChangePassword">确认修改</el-button>
+    </template>
+  </el-dialog>
 </template>
 
 <style scoped>

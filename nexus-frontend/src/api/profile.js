@@ -18,6 +18,10 @@ export const uploadBackground = (file) => {
 export const setDefaultBackground = (bgName) =>
   request.put('/api/profile/background/default', { bgName })
 
+// 修改密码
+export const changePassword = (oldPassword, newPassword) =>
+  request.put('/api/profile/change-password', { oldPassword, newPassword })
+
 export const uploadAvatar = (file) => {
   const formData = new FormData()
   formData.append('file', file)
